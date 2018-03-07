@@ -112,6 +112,8 @@ public class SegmentationView {
 
 	private TableColumn segmentationTableColumn;
 
+	private Button btnAnnotate;
+
 	/**
 	 * // TODO Add description
 	 * 
@@ -150,8 +152,6 @@ public class SegmentationView {
 				}
 			}
 		});
-//		new Label(composite, SWT.NONE);
-
 		Label lblQName = new Label(composite, SWT.NONE);
 		lblQName.setText("Annotation name");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblQName);
@@ -176,7 +176,7 @@ public class SegmentationView {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				String selection = comboQName.getItem(comboQName.getSelectionIndex());
-				comboValue.setItems(annotations.get(selection).stream().toArray(v -> new String[v]));
+				BusyIndicator.showWhile(Display.getCurrent(), () -> comboValue.setItems(annotations.get(selection).stream().toArray(v -> new String[v])));
 				comboValue.setEnabled(true);
 				SegmentationView.this.currentQName = selection;
 			}
@@ -262,29 +262,6 @@ public class SegmentationView {
 		});
 
 		viewer = new TableViewer(composite, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
-//		viewer.setLabelProvider(new LabelProvider() {
-//			@Override
-//			public String getText(Object element) {
-//				if (element instanceof Segment) {
-//					return element == null ? "" : ((Segment) element).getText();
-//				}
-//				return "";
-//			}
-//		});
-		
-		// Column for header
-//		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);
-//        final TableColumn column = viewerColumn.getColumn();
-//        column.setText("ColSeg?");
-//        column.setWidth(SWT.DEFAULT);
-//        column.setResizable(false);
-//        column.setMoveable(false);
-//        viewerColumn.setLabelProvider(new ColumnLabelProvider() {
-//            @Override
-//            public String getText(Object element) {
-//                return "Segments";
-//            }
-//        });
 		final TableViewerColumn col = new TableViewerColumn(viewer, SWT.NONE);
         segmentationTableColumn = col.getColumn();
         segmentationTableColumn.setText("Segments");
@@ -297,7 +274,7 @@ public class SegmentationView {
             	if (element instanceof Segment) {
 					return element == null ? "" : ((Segment) element).getText();
 				}
-				return "NO SEG";
+				return "";
             }
         });
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
@@ -310,6 +287,12 @@ public class SegmentationView {
 		    public void selectionChanged(SelectionChangedEvent event) {
 		        IStructuredSelection selection = viewer.getStructuredSelection();
 		        selectionService.setSelection(selection);
+		        if (!selection.isEmpty() && selection.getFirstElement() instanceof Segment) {
+		        	btnAnnotate.setEnabled(true);
+		        }
+		        else {
+		        	btnAnnotate.setEnabled(false);
+		        }
 		    }
 		});
 
@@ -324,9 +307,11 @@ public class SegmentationView {
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 		
-		Button btnAnnotate = new Button(composite, SWT.NONE);
+		btnAnnotate = new Button(composite, SWT.NONE);
 		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnAnnotate);
 		btnAnnotate.setText("Annotate");
+		btnAnnotate.setEnabled(false);
+		
 	}
 
 	protected void initializeCombos() {
@@ -345,8 +330,13 @@ public class SegmentationView {
 					Iterator<SAnnotation> it = s.iterator_SAnnotation();
 					while (it.hasNext()) {
 						SAnnotation anno = it.next();
-						annotations.put(anno.getQName(), anno.getValue_STEXT());
-						subMonitor.worked(1);
+						if (anno.getQName() != null && anno.getValue_STEXT() != null) {
+							annotations.put(anno.getQName(), anno.getValue_STEXT());
+							subMonitor.worked(1);
+						}
+						else {
+							log.warn("Found an invalid SAnnotation object: {}.", anno);
+						}
 					}
 				}
 				Set<String> qNames = annotations.keySet();
@@ -386,6 +376,7 @@ public class SegmentationView {
 	@Inject
 	@Optional
 	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
+		
 		if (s == null || s.isEmpty())
 			return;
 
@@ -411,6 +402,8 @@ public class SegmentationView {
 	@Inject
 	@Optional
 	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
+		
+		log.trace("Setting selection to object {} of type {}.", o, o.getClass());
 
 		if (o instanceof ISelection) // Already captured
 			return;
