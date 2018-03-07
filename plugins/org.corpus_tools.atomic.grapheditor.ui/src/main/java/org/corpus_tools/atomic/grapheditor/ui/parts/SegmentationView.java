@@ -1,4 +1,4 @@
-package org.corpus_tools.atomic.grapheditor.segmentation.ui.parts;
+package org.corpus_tools.atomic.grapheditor.ui.parts;
 
 import com.google.common.collect.SortedSetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -18,14 +18,12 @@ import javax.inject.Named;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.corpus_tools.salt.SALT_TYPE;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
-import org.corpus_tools.salt.util.DataSourceSequence;
 import org.corpus_tools.salt.util.SaltUtil;
 import org.corpus_tools.search.service.SearchService;
 import org.eclipse.core.resources.IFile;
@@ -362,14 +360,14 @@ public class SegmentationView {
 		// selectedObjects.length + " objects");
 	}
 
-	/**
-	 * Comfort method to allow enabling/disabling widgets in bulk.
-	 * 
-	 * @param enable
-	 */
-	private void enableLoadSegmentation(boolean enable) {
-		comboQName.setEnabled(enable);
-		comboValue.setEnabled(enable);
-		btnLoadSegmentation.setEnabled(enable);
-	}
+//	/**
+//	 * Comfort method to allow enabling/disabling widgets in bulk.
+//	 * 
+//	 * @param enable
+//	 */
+//	private void enableLoadSegmentation(boolean enable) {
+//		comboQName.setEnabled(enable);
+//		comboValue.setEnabled(enable);
+//		btnLoadSegmentation.setEnabled(enable);
+//	}
 }

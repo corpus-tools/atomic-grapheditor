@@ -1,4 +1,4 @@
-package org.corpus_tools.atomic.grapheditor.segmentation.ui;
+package org.corpus_tools.atomic.grapheditor.ui;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;

@@ -92,15 +92,8 @@
 
 	<modules>
   	
-  	<module>
-  		plugins/org.corpus_tools.atomic.grapheditor.segmentation
-  	</module>
-  	<module>
-  		feature/org.corpus_tools.atomic.grapheditor.feature
-  	</module>
-  	<module>
-  		plugins/org.corpus_tools.atomic.grapheditor.segmentation.ui
-  	</module>
-  	<module>plugins/org.corpus_tools.atomic.grapheditor</module>
+  	<module>plugins/org.corpus_tools.atomic.grapheditor.segmentation.api</module>
+  	<module>feature/org.corpus_tools.atomic.grapheditor.feature</module>
+  	<module>plugins/org.corpus_tools.atomic.grapheditor.ui</module>
 	</modules>
 </project>

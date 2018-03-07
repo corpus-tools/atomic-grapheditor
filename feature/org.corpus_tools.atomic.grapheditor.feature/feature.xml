@@ -17,13 +17,6 @@
    </license>
 
    <plugin
-         id="org.corpus_tools.atomic.grapheditor.segmentation.ui"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="org.corpus_tools.atomic.grapheditor.segmentation.api"
          download-size="0"
          install-size="0"
@@ -31,7 +24,7 @@
          unpack="false"/>
 
    <plugin
-         id="org.corpus_tools.atomic.grapheditor"
+         id="org.corpus_tools.atomic.grapheditor.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"
