@@ -42,6 +42,7 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -50,6 +51,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -60,6 +62,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.layout.GridData;
 
@@ -107,6 +110,8 @@ public class SegmentationView {
 
 	private TableViewer viewer;
 
+	private TableColumn segmentationTableColumn;
+
 	/**
 	 * // TODO Add description
 	 * 
@@ -115,12 +120,17 @@ public class SegmentationView {
 	@PostConstruct
 	public void createPartControl(Composite parent) {
 		Composite composite = new Composite(parent, SWT.NONE);
-		composite.setLayout(new GridLayout(4, false));
+		composite.setLocation(168, 0);
+		composite.setLayout(new GridLayout(3, false));
 
 		lblSelectedDocumentFile = new Label(composite, SWT.NONE);
 		lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(lblSelectedDocumentFile);
 
+		/*
+		 *  Click on button loads the document graph currently selected
+		 *  in the navigation view
+		 */
 		btnLoadGraph = new Button(composite, SWT.PUSH);
 		btnLoadGraph.setText("Load document");
 		btnLoadGraph.setEnabled(false);
@@ -132,6 +142,7 @@ public class SegmentationView {
 					BusyIndicator.showWhile(Display.getCurrent(), () -> graph = SaltUtil
 							.loadDocumentGraph(URI.createURI(documentFile.getLocationURI().toASCIIString())));
 					SegmentationView.this.initializeCombos();
+					SegmentationView.this.viewer.setInput(null);
 				}
 				else {
 					MessageDialog.openError(parent.getShell(), "Cannot load graph",
@@ -139,7 +150,7 @@ public class SegmentationView {
 				}
 			}
 		});
-		new Label(composite, SWT.NONE);
+//		new Label(composite, SWT.NONE);
 
 		Label lblQName = new Label(composite, SWT.NONE);
 		lblQName.setText("Annotation name");
@@ -150,8 +161,14 @@ public class SegmentationView {
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblValue);
 
 		new Label(composite, SWT.NONE);
-		new Label(composite, SWT.NONE);
 
+		/*
+		 * Combobox showing all available qualified names (namespace::name)
+		 * for annotations available in the document graph's nodes.
+		 * On selection, sets the available *values* for the selected
+		 * qualified annotation name to the values combobox. Also
+		 * saves the selected qualified name in the respective field.
+		 */
 		comboQName = new Combo(composite, SWT.READ_ONLY);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).span(1, 1).grab(true, false).applyTo(comboQName);
 		comboQName.setEnabled(false);
@@ -165,6 +182,11 @@ public class SegmentationView {
 			}
 		});
 
+		/*
+		 * Combobox showing the valid values for the selected qualified annotation
+		 * name. On selection, activates the load segmentation button and
+		 * saves the current value in the respective field.
+		 */
 		comboValue = new Combo(composite, SWT.READ_ONLY);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).span(1, 1).grab(true, false).applyTo(comboValue);
 		comboValue.setEnabled(false);
@@ -177,6 +199,11 @@ public class SegmentationView {
 			}
 		});
 
+		/*
+		 * Button triggers searching FIXME all corpora? FIXME
+		 * for nodes with qName=value, and fills the table with the
+		 * results.
+		 */
 		btnLoadSegmentation = new Button(composite, SWT.PUSH);
 		btnLoadSegmentation.setText("Load segmentation");
 		GridDataFactory.fillDefaults().span(1, 1);
@@ -220,6 +247,7 @@ public class SegmentationView {
 
 								MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
 							}
+							segmentationTableColumn.setText("Segments: " + String.valueOf(segments.size()));
 							SegmentationView.this.viewer.setInput(segments.toArray(new Segment[segments.size()]));
 							SegmentationView.this.viewer.refresh();
 						});
@@ -232,19 +260,48 @@ public class SegmentationView {
 				j.schedule();
 			}
 		});
-		new Label(composite, SWT.NONE);
 
 		viewer = new TableViewer(composite, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
-		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		viewer.setLabelProvider(new LabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof Segment) {
+//		viewer.setLabelProvider(new LabelProvider() {
+//			@Override
+//			public String getText(Object element) {
+//				if (element instanceof Segment) {
+//					return element == null ? "" : ((Segment) element).getText();
+//				}
+//				return "";
+//			}
+//		});
+		
+		// Column for header
+//		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);
+//        final TableColumn column = viewerColumn.getColumn();
+//        column.setText("ColSeg?");
+//        column.setWidth(SWT.DEFAULT);
+//        column.setResizable(false);
+//        column.setMoveable(false);
+//        viewerColumn.setLabelProvider(new ColumnLabelProvider() {
+//            @Override
+//            public String getText(Object element) {
+//                return "Segments";
+//            }
+//        });
+		final TableViewerColumn col = new TableViewerColumn(viewer, SWT.NONE);
+        segmentationTableColumn = col.getColumn();
+        segmentationTableColumn.setText("Segments");
+        segmentationTableColumn.setWidth(100);
+        segmentationTableColumn.setResizable(false);
+        segmentationTableColumn.setMoveable(false);
+		col.setLabelProvider(new ColumnLabelProvider() {
+            @Override
+            public String getText(Object element) {
+            	if (element instanceof Segment) {
 					return element == null ? "" : ((Segment) element).getText();
 				}
-				return "";
-			}
-		});
+				return "NO SEG";
+            }
+        });
+		viewer.setContentProvider(ArrayContentProvider.getInstance());
+		
 		final Table table = viewer.getTable();
 		GridDataFactory.fillDefaults().span(3, 1).grab(true, true).applyTo(table);
 		
@@ -253,19 +310,6 @@ public class SegmentationView {
 		    public void selectionChanged(SelectionChangedEvent event) {
 		        IStructuredSelection selection = viewer.getStructuredSelection();
 		        selectionService.setSelection(selection);
-		        log.trace("SELECTED " + selection.size());
-		        Iterator it = selection.iterator();
-		        while (it.hasNext()) {
-		        	Object s = it.next();
-		        	if (s instanceof Segment) {
-		        		log.trace("SEGMENT " + s + " / TEXT " + ((Segment) s).getText() + " / NODE " + ((Segment) s).getNode().getId());
-		        	}
-		        	log.trace("NON-SEGMENT: " + s);
-		        }
-//		        for (e : selection.) {
-//		        	log.trace(e);
-//		        }
-		        log.trace(selection.getFirstElement());
 		    }
 		});
 
@@ -277,9 +321,11 @@ public class SegmentationView {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		
+		new Label(composite, SWT.NONE);
+		new Label(composite, SWT.NONE);
+		
 		Button btnAnnotate = new Button(composite, SWT.NONE);
-		btnAnnotate.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1));
-		btnAnnotate.setAlignment(SWT.LEFT);
+		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnAnnotate);
 		btnAnnotate.setText("Annotate");
 	}
 
@@ -308,6 +354,11 @@ public class SegmentationView {
 				uiSync.asyncExec(() -> {
 					comboQName.setItems(qNameItems);
 					comboQName.setEnabled(true);
+					comboQName.setFocus();
+					comboValue.removeAll();
+					comboValue.setEnabled(false);
+					segmentationTableColumn.setText("Segments");
+					btnLoadSegmentation.setEnabled(false);
 				});
 				return Status.OK_STATUS;
 
@@ -383,25 +434,6 @@ public class SegmentationView {
 				lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
 				btnLoadGraph.setEnabled(false);
 			}
-	}
-
-	/**
-	 * This method manages the multiple selection of your current objects. <br/>
-	 * You should change the parameter type of your array of Objects to manage
-	 * your specific selection
-	 * 
-	 * @param o
-	 *            : the current array of objects received in case of multiple
-	 *            selection
-	 */
-	@Inject
-	@Optional
-	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object[] selectedObjects) {
-
-		// Test if label exists (inject methods are called before PostConstruct)
-		// if (lblSelectedDocumentFile != null)
-		// lblSelectedDocumentFile.setText("This is a multiple selection of " +
-		// selectedObjects.length + " objects");
 	}
 
 	/**
