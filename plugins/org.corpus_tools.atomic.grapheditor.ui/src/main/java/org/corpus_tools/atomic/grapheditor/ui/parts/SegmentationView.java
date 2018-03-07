@@ -8,13 +8,18 @@ import annis.exceptions.AnnisQLSyntaxException;
 import annis.service.objects.Match;
 import annis.service.objects.MatchGroup;
 
+import static org.assertj.core.api.Assertions.filter;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
+import org.corpus_tools.graphannis.API;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -227,7 +232,6 @@ public class SegmentationView {
 
 								for (int i = 0; i < result.getMatches().size(); i++) {
 									Match m = result.getMatches().get(i);
-									List<SToken> tokenList = new ArrayList<>();
 									List<java.net.URI> ids = m.getSaltIDs();
 									assert ids.size() == 1;
 									SNode node = graph.getNode(ids.get(0).toString());
@@ -311,6 +315,93 @@ public class SegmentationView {
 		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnAnnotate);
 		btnAnnotate.setText("Annotate");
 		btnAnnotate.setEnabled(false);
+		btnAnnotate.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IStructuredSelection selection = viewer.getStructuredSelection();
+				
+				Job j = new Job("Building annotation graph for selected segments") {
+
+					@Override
+					protected IStatus run(IProgressMonitor monitor) {
+						List<MatchGroup> matchGroups = new ArrayList<>();
+						
+						@SuppressWarnings("rawtypes")
+						List selectionList = selection.toList();
+						int units = selectionList.size();
+						monitor.subTask("Building graph for nodes.");
+						monitor.beginTask("Searching for nodes linked to segments", units);
+						for (Object s : selectionList) {
+							if (s instanceof Segment) {
+								SNode n = ((Segment) s).getNode();
+								String nodeAQL = n.getId().replaceAll("salt:/", "");
+								MatchGroup matchGroup = null;
+								try {
+									matchGroup = search.find("annis:node_name=\"" + nodeAQL + "\" & node & #1 _i_ #2");
+								}
+								catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
+									MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
+									return null;
+								}
+								matchGroups.add(matchGroup);
+								monitor.worked(1);
+							}
+						}
+						log.trace("RESULTS: \n\n\n");
+						for (MatchGroup g : matchGroups) {
+							log.trace("MATCHGROUP " + g.getMatches().toString());
+						}
+//						
+//						for (SNode node : selectedNodes) {
+//							log.trace("NODE NAME " + node.getName());
+////							MatchGroup result = search.
+////									// find("node_name=\"" + node.getName()+ "\"");
+////							log.trace("RESULT FOR NODE {}: {}", node.getName(), result.getMatches().size());
+//							monitor.worked(1);
+//						}
+//						uiSync.asyncExec(() -> {
+//							List<Segment> segments = new ArrayList<>();
+//							try {
+//
+//								for (int i = 0; i < result.getMatches().size(); i++) {
+//									Match m = result.getMatches().get(i);
+//									List<SToken> tokenList = new ArrayList<>();
+//									List<java.net.URI> ids = m.getSaltIDs();
+//									assert ids.size() == 1;
+//									SNode node = graph.getNode(ids.get(0).toString());
+//									List<SToken> unsortedOverlappedTokens = graph.getOverlappedTokens(node);
+//									List<SToken> sortedOverlappedTokens = graph
+//											.getSortedTokenByText(unsortedOverlappedTokens);
+//									String segmentText = "";
+//									for (SToken tok : sortedOverlappedTokens) {
+//										segmentText = segmentText.concat(graph.getText(tok).concat(" "));
+//									}
+//									segments.add(new Segment(segmentText.trim(), node));
+//									monitor.worked(1);
+//								}
+//
+//							}
+//							catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
+//
+//								MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
+//							}
+//							segmentationTableColumn.setText("Segments: " + String.valueOf(segments.size()));
+//							SegmentationView.this.viewer.setInput(segments.toArray(new Segment[segments.size()]));
+//							SegmentationView.this.viewer.refresh();
+//						});
+						return Status.OK_STATUS;
+					}
+
+				};
+				j.setUser(true);
+				j.setPriority(Job.LONG);
+				j.schedule();
+				
+				
+				
+				
+			}
+		});
 		
 	}
 
