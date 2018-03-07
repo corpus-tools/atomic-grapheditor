@@ -18,6 +18,7 @@ import javax.inject.Named;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView.Segment;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
@@ -41,8 +42,13 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.IBaseLabelProvider;
+import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
@@ -55,6 +61,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.layout.GridData;
 
 /**
  * // TODO Add description
@@ -108,16 +115,16 @@ public class SegmentationView {
 	@PostConstruct
 	public void createPartControl(Composite parent) {
 		Composite composite = new Composite(parent, SWT.NONE);
-		composite.setLayout(new GridLayout(3, false));
+		composite.setLayout(new GridLayout(4, false));
 
 		lblSelectedDocumentFile = new Label(composite, SWT.NONE);
 		lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(lblSelectedDocumentFile);
 
 		btnLoadGraph = new Button(composite, SWT.PUSH);
-		btnLoadGraph.setText("Load graph");
+		btnLoadGraph.setText("Load document");
 		btnLoadGraph.setEnabled(false);
-		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).applyTo(btnLoadGraph);
+		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnLoadGraph);
 		btnLoadGraph.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -132,6 +139,7 @@ public class SegmentationView {
 				}
 			}
 		});
+		new Label(composite, SWT.NONE);
 
 		Label lblQName = new Label(composite, SWT.NONE);
 		lblQName.setText("Annotation name");
@@ -141,6 +149,7 @@ public class SegmentationView {
 		lblValue.setText("Annotation value");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblValue);
 
+		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 
 		comboQName = new Combo(composite, SWT.READ_ONLY);
@@ -177,7 +186,6 @@ public class SegmentationView {
 			public void widgetSelected(SelectionEvent e) {
 				String aqlQName = (currentQName.contains("::") ? currentQName.replace("::", ":") : currentQName);
 				String segmentationString = aqlQName + "=\"" + currentValue + "\"";
-				lblSelectedDocumentFile.setText(segmentationString);
 
 				Job j = new Job("Retrieving segmentation") {
 
@@ -187,7 +195,7 @@ public class SegmentationView {
 						MatchGroup result = search.find(segmentationString);
 						monitor.beginTask("Retrieving text for segmentation units", result.getMatches().size());
 						uiSync.asyncExec(() -> {
-							List<String> segments = new ArrayList<>();
+							List<Segment> segments = new ArrayList<>();
 							try {
 
 								for (int i = 0; i < result.getMatches().size(); i++) {
@@ -203,7 +211,7 @@ public class SegmentationView {
 									for (SToken tok : sortedOverlappedTokens) {
 										segmentText = segmentText.concat(graph.getText(tok).concat(" "));
 									}
-									segments.add(segmentText.trim());
+									segments.add(new Segment(segmentText.trim(), node));
 									monitor.worked(1);
 								}
 
@@ -212,7 +220,7 @@ public class SegmentationView {
 
 								MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
 							}
-							SegmentationView.this.viewer.setInput(segments.toArray(new String[segments.size()]));
+							SegmentationView.this.viewer.setInput(segments.toArray(new Segment[segments.size()]));
 							SegmentationView.this.viewer.refresh();
 						});
 						return Status.OK_STATUS;
@@ -224,11 +232,42 @@ public class SegmentationView {
 				j.schedule();
 			}
 		});
+		new Label(composite, SWT.NONE);
 
 		viewer = new TableViewer(composite, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
+		viewer.setLabelProvider(new LabelProvider() {
+			@Override
+			public String getText(Object element) {
+				if (element instanceof Segment) {
+					return element == null ? "" : ((Segment) element).getText();
+				}
+				return "";
+			}
+		});
 		final Table table = viewer.getTable();
 		GridDataFactory.fillDefaults().span(3, 1).grab(true, true).applyTo(table);
+		
+		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
+		    @Override
+		    public void selectionChanged(SelectionChangedEvent event) {
+		        IStructuredSelection selection = viewer.getStructuredSelection();
+		        selectionService.setSelection(selection);
+		        log.trace("SELECTED " + selection.size());
+		        Iterator it = selection.iterator();
+		        while (it.hasNext()) {
+		        	Object s = it.next();
+		        	if (s instanceof Segment) {
+		        		log.trace("SEGMENT " + s + " / TEXT " + ((Segment) s).getText() + " / NODE " + ((Segment) s).getNode().getId());
+		        	}
+		        	log.trace("NON-SEGMENT: " + s);
+		        }
+//		        for (e : selection.) {
+//		        	log.trace(e);
+//		        }
+		        log.trace(selection.getFirstElement());
+		    }
+		});
 
 		// create the columns
 		// not yet implemented
@@ -237,6 +276,11 @@ public class SegmentationView {
 		// make lines and header visible
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
+		
+		Button btnAnnotate = new Button(composite, SWT.NONE);
+		btnAnnotate.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1));
+		btnAnnotate.setAlignment(SWT.LEFT);
+		btnAnnotate.setText("Annotate");
 	}
 
 	protected void initializeCombos() {
@@ -360,14 +404,34 @@ public class SegmentationView {
 		// selectedObjects.length + " objects");
 	}
 
-//	/**
-//	 * Comfort method to allow enabling/disabling widgets in bulk.
-//	 * 
-//	 * @param enable
-//	 */
-//	private void enableLoadSegmentation(boolean enable) {
-//		comboQName.setEnabled(enable);
-//		comboValue.setEnabled(enable);
-//		btnLoadSegmentation.setEnabled(enable);
-//	}
+	/**
+		 * // TODO Add description
+		 *
+		 * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
+		 * 
+		 */
+	public class Segment {
+		
+		public Segment(String text, SNode node) {
+			this.text = text;
+			this.node = node;
+		}
+		
+		private String text;
+		private SNode node;
+		
+		/**
+		 * @return the text
+		 */
+		public final String getText() {
+			return text;
+		}
+		/**
+		 * @return the node
+		 */
+		public final SNode getNode() {
+			return node;
+		}
+	
+	}
 }
