@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="ASCII"?>
-<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced" xmlns:application="http://www.eclipse.org/ui/2010/UIModel/application" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_BxaXACerEeWxCPrV0pAZQQ">
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_BxaXACerEeWxCPrV0pAZQQ">
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_j2XU0CE8EeicB9o_IvsRpg" featurename="snippets" parentElementId="org.eclipse.e4.legacy.ide.application">
     <elements xsi:type="advanced:Perspective" xmi:id="_-awZgCE8EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.perspective.graphediting" accessibilityPhrase="Graph Editing" selectedElement="_HyeW0CE9EeicB9o_IvsRpg" label="Graph Editing" iconURI="platform:/plugin/org.corpus_tools.atomic/icons/obj16/atomic.png" tooltip="A perspective bundling views for graph editing">
       <children xsi:type="basic:PartSashContainer" xmi:id="_HyeW0CE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partsashcontainer.0" selectedElement="_KOMLUCE9EeicB9o_IvsRpg" horizontal="true">
-        <children xsi:type="basic:PartStack" xmi:id="_iprjYCH5EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.navigation" containerData="20">
+        <children xsi:type="basic:PartStack" xmi:id="_iprjYCH5EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.navigation" containerData="20" selectedElement="_RcRHECH3EeilmepNhpTrFQ">
           <children xsi:type="advanced:Placeholder" xmi:id="_RcRHECH3EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.views.navigation" ref="_F0GUoCH4EeilmepNhpTrFQ" closeable="true"/>
         </children>
-        <children xsi:type="basic:PartStack" xmi:id="_KOMLUCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.editing" containerData="80" selectedElement="_0KJQ0CH2EeilmepNhpTrFQ">
+        <children xsi:type="basic:PartStack" xmi:id="_KOMLUCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.segmentation" containerData="30">
           <children xsi:type="basic:Part" xmi:id="_0KJQ0CH2EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.part.segmentation" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView" label="Segmentation" iconURI="platform:/plugin/org.corpus_tools.atomic.grapheditor.ui/icons/Sample.png" closeable="true"/>
+        </children>
+        <children xsi:type="basic:PartStack" xmi:id="_tLWXECIUEeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.editor" containerData="50">
           <children xsi:type="basic:Part" xmi:id="_LXR6UCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.parts.grapheditor.static" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.parts.GraphEditor" label="Graph Editor" iconURI="platform:/plugin/org.corpus_tools.atomic.grapheditor.ui/icons/Sample.png">
             <tags>grapheditor</tags>
           </children>
@@ -28,8 +30,5 @@
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_phx8QCH8EeilmepNhpTrFQ" featurename="handlers" parentElementId="xpath:/">
     <elements xsi:type="commands:Handler" xmi:id="_rGtSsCH8EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.handler.0" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.handlers.OpenGraphEditingPerspectiveHandler" command="_iD3ZMCH8EeilmepNhpTrFQ"/>
-  </fragments>
-  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_AP3x4CIKEeilmepNhpTrFQ" featurename="addons" parentElementId="org.eclipse.e4.legacy.ide.application">
-    <elements xsi:type="application:Addon" xmi:id="_Ce2K4CIKEeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.addon.0"/>
   </fragments>
 </fragment:ModelFragments>
