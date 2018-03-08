@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Atomic Graph Editor Visuals Plugin
+Bundle-SymbolicName: org.corpus_tools.atomic.grapheditor.visuals
+Bundle-Version: 0.1.0.qualifier
+Bundle-Activator: org.corpus_tools.atomic.grapheditor.visuals.Activator
+Bundle-Vendor: Stephan Druskat
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.gef.geometry,
+ org.eclipse.gef.fx,
+ org.eclipse.gef.common,
+ org.eclipse.gef.geometry.convert.fx
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Export-Package: org.corpus_tools.atomic.grapheditor.visuals

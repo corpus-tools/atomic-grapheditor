@@ -3,13 +3,14 @@
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_j2XU0CE8EeicB9o_IvsRpg" featurename="snippets" parentElementId="org.eclipse.e4.legacy.ide.application">
     <elements xsi:type="advanced:Perspective" xmi:id="_-awZgCE8EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.perspective.graphediting" accessibilityPhrase="Graph Editing" selectedElement="_HyeW0CE9EeicB9o_IvsRpg" label="Graph Editing" iconURI="platform:/plugin/org.corpus_tools.atomic/icons/obj16/atomic.png" tooltip="A perspective bundling views for graph editing">
       <children xsi:type="basic:PartSashContainer" xmi:id="_HyeW0CE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partsashcontainer.0" selectedElement="_KOMLUCE9EeicB9o_IvsRpg" horizontal="true">
-        <children xsi:type="basic:PartStack" xmi:id="_iprjYCH5EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.navigation" containerData="20" selectedElement="_RcRHECH3EeilmepNhpTrFQ">
+        <children xsi:type="basic:PartStack" xmi:id="_iprjYCH5EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.navigation" containerData="20">
           <children xsi:type="advanced:Placeholder" xmi:id="_RcRHECH3EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.views.navigation" ref="_F0GUoCH4EeilmepNhpTrFQ" closeable="true"/>
         </children>
-        <children xsi:type="basic:PartStack" xmi:id="_KOMLUCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.segmentation" containerData="30">
+        <children xsi:type="basic:PartStack" xmi:id="_KOMLUCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.segmentation" containerData="30" selectedElement="_0KJQ0CH2EeilmepNhpTrFQ">
           <children xsi:type="basic:Part" xmi:id="_0KJQ0CH2EeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.part.segmentation" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView" label="Segmentation" iconURI="platform:/plugin/org.corpus_tools.atomic.grapheditor.ui/icons/Sample.png" closeable="true"/>
         </children>
         <children xsi:type="basic:PartStack" xmi:id="_tLWXECIUEeilmepNhpTrFQ" elementId="org.corpus_tools.atomic.grapheditor.ui.partstack.editor" containerData="50">
+          <children xsi:type="basic:Part" xmi:id="_opU1wCK2EeiYB9ugXjeLrQ" elementId="org.corpus_tools.atomic.grapheditor.ui.part.test" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.parts.TestPart" label="Test" closeable="true"/>
           <children xsi:type="basic:Part" xmi:id="_LXR6UCE9EeicB9o_IvsRpg" elementId="org.corpus_tools.atomic.grapheditor.ui.parts.grapheditor.static" contributionURI="bundleclass://org.corpus_tools.atomic.grapheditor.ui/org.corpus_tools.atomic.grapheditor.ui.parts.GraphEditor" label="Graph Editor" iconURI="platform:/plugin/org.corpus_tools.atomic.grapheditor.ui/icons/Sample.png">
             <tags>grapheditor</tags>
           </children>

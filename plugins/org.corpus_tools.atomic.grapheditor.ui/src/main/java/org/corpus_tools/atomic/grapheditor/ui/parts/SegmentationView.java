@@ -23,6 +23,7 @@ import org.corpus_tools.graphannis.API;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
 import org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView.Segment;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
@@ -39,6 +40,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.e4.core.di.annotations.Optional;
+import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.di.Focus;
 import org.eclipse.e4.ui.di.UISynchronize;
 import org.eclipse.e4.ui.services.IServiceConstants;
@@ -78,6 +80,9 @@ import org.eclipse.swt.layout.GridData;
  * 
  */
 public class SegmentationView {
+	
+	@Inject
+	IEventBroker eventBroker;
 
 	@Inject
 	private UISynchronize uiSync;
@@ -347,48 +352,8 @@ public class SegmentationView {
 								monitor.worked(1);
 							}
 						}
-						log.trace("RESULTS: \n\n\n");
-						for (MatchGroup g : matchGroups) {
-							log.trace("MATCHGROUP " + g.getMatches().toString());
-						}
-//						
-//						for (SNode node : selectedNodes) {
-//							log.trace("NODE NAME " + node.getName());
-////							MatchGroup result = search.
-////									// find("node_name=\"" + node.getName()+ "\"");
-////							log.trace("RESULT FOR NODE {}: {}", node.getName(), result.getMatches().size());
-//							monitor.worked(1);
-//						}
-//						uiSync.asyncExec(() -> {
-//							List<Segment> segments = new ArrayList<>();
-//							try {
-//
-//								for (int i = 0; i < result.getMatches().size(); i++) {
-//									Match m = result.getMatches().get(i);
-//									List<SToken> tokenList = new ArrayList<>();
-//									List<java.net.URI> ids = m.getSaltIDs();
-//									assert ids.size() == 1;
-//									SNode node = graph.getNode(ids.get(0).toString());
-//									List<SToken> unsortedOverlappedTokens = graph.getOverlappedTokens(node);
-//									List<SToken> sortedOverlappedTokens = graph
-//											.getSortedTokenByText(unsortedOverlappedTokens);
-//									String segmentText = "";
-//									for (SToken tok : sortedOverlappedTokens) {
-//										segmentText = segmentText.concat(graph.getText(tok).concat(" "));
-//									}
-//									segments.add(new Segment(segmentText.trim(), node));
-//									monitor.worked(1);
-//								}
-//
-//							}
-//							catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
-//
-//								MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
-//							}
-//							segmentationTableColumn.setText("Segments: " + String.valueOf(segments.size()));
-//							SegmentationView.this.viewer.setInput(segments.toArray(new Segment[segments.size()]));
-//							SegmentationView.this.viewer.refresh();
-//						});
+						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
+						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
 						return Status.OK_STATUS;
 					}
 
@@ -396,10 +361,6 @@ public class SegmentationView {
 				j.setUser(true);
 				j.setPriority(Job.LONG);
 				j.schedule();
-				
-				
-				
-				
 			}
 		});
 		
@@ -549,5 +510,10 @@ public class SegmentationView {
 			return node;
 		}
 	
+	}
+	
+	@Focus
+	public void onFocus() {
+		btnLoadGraph.setFocus();
 	}
 }
