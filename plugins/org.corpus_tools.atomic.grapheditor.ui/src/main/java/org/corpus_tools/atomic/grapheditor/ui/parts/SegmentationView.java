@@ -122,7 +122,7 @@ public class SegmentationView extends DocumentGraphEditor {
 		// log.trace("SERVICE " + service);
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
-		composite.setLayout(new GridLayout(3, false));
+		composite.setLayout(new GridLayout(4, false));
 		Label lblQName = new Label(composite, SWT.NONE);
 		lblQName.setText("Annotation name");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblQName);
@@ -130,7 +130,8 @@ public class SegmentationView extends DocumentGraphEditor {
 		Label lblValue = new Label(composite, SWT.NONE);
 		lblValue.setText("Annotation value");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblValue);
-
+		
+		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 
 		/*
@@ -229,6 +230,15 @@ public class SegmentationView extends DocumentGraphEditor {
 				j.schedule();
 			}
 		});
+		
+		Button btnReIndex = new Button(composite, SWT.PUSH);
+		btnReIndex.setText("Re-index documents");
+		btnReIndex.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				search.reindexAllDocuments(true);
+			}
+		});
 
 		viewer = new TableViewer(composite, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
 		// The table viewer provides selection to the selection service
@@ -251,7 +261,7 @@ public class SegmentationView extends DocumentGraphEditor {
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
 
 		final Table table = viewer.getTable();
-		GridDataFactory.fillDefaults().span(3, 1).grab(true, true).applyTo(table);
+		GridDataFactory.fillDefaults().span(4, 1).grab(true, true).applyTo(table);
 
 		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
 			@Override
@@ -270,6 +280,7 @@ public class SegmentationView extends DocumentGraphEditor {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 
+		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 
