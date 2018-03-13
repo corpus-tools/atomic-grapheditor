@@ -5,7 +5,7 @@
          point="org.eclipse.ui.editors">
       <editor
             default="false"
-            name="Graph Editor - Segmentation"
+            name="Graph Editor "
             extensions="salt"
             class="org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView"
             id="org.corpus_tools.atomic.grapheditor.ui.segmentationeditor">

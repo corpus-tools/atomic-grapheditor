@@ -104,6 +104,17 @@ public class SegmentationView extends DocumentGraphEditor {
 	 * @param parent
 	 */
 	public void createEditorPartControl(Composite parent) {
+		/*
+		 * Open the editor already, so that update works smoothly
+		 */
+		try {
+			IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
+		}
+		catch (PartInitException e1) {
+			// TODO MessageDialog.openError
+			log.error("Could not initialize Graph Editor!", e1);
+		}
+		
 		projectName = ((FileEditorInput) getEditorInput()).getFile().getProject().getName();
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
