@@ -299,7 +299,7 @@ public class SegmentationView extends DocumentGraphEditor {
 								String nodeAQL = n.getId().replaceAll("salt:/", "");
 								MatchGroup matchGroup = null;
 								try {
-									matchGroup = search.find("annis:node_name=\"" + nodeAQL + "\" & node & #1 _i_ #2");
+									matchGroup = search.find("annis:node_name=\"" + nodeAQL + "\" _o_ node");
 								}
 								catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
 									MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
