@@ -1,6 +1,6 @@
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.SortedSetMultimap; 
 import com.google.common.collect.TreeMultimap;
 
 import annis.exceptions.AnnisQLSemanticsException;
@@ -67,7 +67,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
@@ -267,10 +266,6 @@ public class SegmentationView extends DocumentGraphEditor {
 			}
 		});
 
-		// create the columns
-		// not yet implemented
-		// createColumns(viewer);
-
 		// make lines and header visible
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -291,25 +286,6 @@ public class SegmentationView extends DocumentGraphEditor {
 
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
-						// Display.getDefault().asyncExec(() -> {try {
-						// IDE.openEditor(getSite().getPage(), getEditorInput(),
-						// GRAPH_EDITOR_ID);
-						// }
-						// catch (PartInitException e) {
-						// // TODO Auto-generated catch block
-						// e.printStackTrace();
-						// }});
-						// try {
-						// IEditorPart part =
-						// PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(getEditorInput(),
-						// "org.corpus_tools.atomic.grapheditor.ui.grapheditor");
-						// log.trace("PART: " + part);
-						// }
-						// catch (PartInitException e1) {
-						// // TODO Auto-generated catch block
-						// e1.printStackTrace();
-						// }
-
 						List<MatchGroup> matchGroups = new ArrayList<>();
 
 						@SuppressWarnings("rawtypes")
@@ -333,44 +309,9 @@ public class SegmentationView extends DocumentGraphEditor {
 								monitor.worked(1);
 							}
 						}
-						IEditorReference[] refs = getSite().getPage().getEditorReferences();
-						for (int i = 0; i < refs.length; i++) {
-							IEditorReference ref = refs[i];
-							log.trace(ref.getId());
-							if (ref.getId().equals(SegmentationView.GRAPH_EDITOR_ID)) {
-								eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
-								eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
-							}
-						}
-						// #####################################
-						// IWorkbenchPartSite site = getSite();
-						// IEditorInput input = getEditorInput();
-						// IEclipseContext context =
-						// PlatformUI.getWorkbench().getService(IEclipseContext.class);
-						// log.trace("CONTACET " + context);
-						// context.set("graph-editor-site", site);
-						// context.set("graph-editor-input", input);
-						//// MPart grep = partService.findPart(GRAPH_EDITOR_ID);
-						//// log.trace("GREP " + partService);
-						////// partService.showPart(grep, PartState.ACTIVATE);
-						// MPart segmentationPart = partService.getActivePart();
-						//// log.trace("SEG PART: " + segmentationPart);
-						//// MPart graphEditorPart =
-						// partService.createPart(GRAPH_EDITOR_ID);
-						//// MPart gep = partService.findPart(GRAPH_EDITOR_ID);
-						//// IEditorDescriptor edRef =
-						// PlatformUI.getWorkbench().getEditorRegistry().findEditor(GRAPH_EDITOR_ID);
-						//// log.trace("EFF " + edRef);
-						// MPart grrr =
-						// partService.createPart("org.corpus_tools.atomic.grapheditor.ui.partdescriptor.grapheditor");
-						//// log.trace("?!?!?! " + grrr);
-						//// EModelService m =
-						// PlatformUI.getWorkbench().getService(EModelService.class);
-						//// log.trace(">>>>>>>>>>>> " + m);
-						// insertEditor(0.5f, EModelService.RIGHT_OF,
-						// segmentationPart, grrr);
-						// ######################################
-
+						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
+						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
+						eventBroker.post(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, getEditorInput());
 						return Status.OK_STATUS;
 					}
 
@@ -541,6 +482,12 @@ public class SegmentationView extends DocumentGraphEditor {
 	 */
 	public class Segment {
 
+		/**
+		 * // TODO Add description
+		 * 
+		 * @param text
+		 * @param node
+		 */
 		public Segment(String text, SNode node) {
 			this.text = text;
 			this.node = node;
@@ -563,19 +510,6 @@ public class SegmentationView extends DocumentGraphEditor {
 			return node;
 		}
 
-	}
-
-	@Focus
-	public void onFocus() {
-		log.trace("Focussing the table");
-		viewer.getTable().setFocus();
-	}
-
-	/**
-	 * @return the viewer
-	 */
-	public final TableViewer getViewer() {
-		return viewer;
 	}
 
 }
