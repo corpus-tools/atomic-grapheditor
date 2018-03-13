@@ -4,15 +4,18 @@ package org.corpus_tools.atomic.grapheditor.ui.handlers;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
 
@@ -27,6 +30,7 @@ public class OpenGraphEditingPerspectiveHandler {
 	private static final Logger log = LogManager.getLogger(OpenGraphEditingPerspectiveHandler.class);
 
 	private static final String perspectiveId = "org.corpus_tools.atomic.grapheditor.ui.perspective.graphediting";
+	private static final String segmentationPartId = "org.corpus_tools.atomic.grapheditor.ui.part.segmentation";
 
 	/**
 	 * // TODO Add description
@@ -91,5 +95,11 @@ public class OpenGraphEditingPerspectiveHandler {
 				MessageDialog.openInformation(Display.getCurrent().getActiveShell(), "Cannot open graphed editing perspective", "Cannot open graph editing perspective. Please open it from the perspective switcher in the toolbar to proceed.");
 			}
 		}
+		/*
+		 *  Activate the segmentation part to avoid it not picking up
+		 *  selections before it has been first activated.
+		 */
+		partService.showPart(segmentationPartId, PartState.ACTIVATE);
+		partService.requestActivation();
 	}
 }

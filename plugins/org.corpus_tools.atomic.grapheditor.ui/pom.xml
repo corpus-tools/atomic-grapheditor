@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>org.corpus_tools.atomic.grapheditor.ui</artifactId>
   <packaging>eclipse-plugin</packaging>
-  <name>Atomic Graph Editor Plugin</name>
+  <name>Atomic Graph Editor UI Plugin</name>
   <parent>
   	<groupId>org.corpus_tools.atomic</groupId>
   	<artifactId>grapheditor</artifactId>

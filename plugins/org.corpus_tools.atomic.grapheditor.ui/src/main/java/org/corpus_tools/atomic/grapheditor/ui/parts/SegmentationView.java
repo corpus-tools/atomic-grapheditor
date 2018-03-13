@@ -8,54 +8,51 @@ import annis.exceptions.AnnisQLSyntaxException;
 import annis.service.objects.Match;
 import annis.service.objects.MatchGroup;
 
-import static org.assertj.core.api.Assertions.filter;
-
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
-import org.corpus_tools.graphannis.API;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.atomic.api.editors.DocumentGraphEditor;
 import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
-import org.corpus_tools.atomic.grapheditor.ui.parts.SegmentationView.Segment;
-import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
-import org.corpus_tools.salt.util.SaltUtil;
 import org.corpus_tools.search.service.SearchService;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.di.Focus;
-import org.eclipse.e4.ui.di.UISynchronize;
 import org.eclipse.e4.ui.services.IServiceConstants;
-import org.eclipse.e4.ui.workbench.modeling.ESelectionService;
-import org.eclipse.emf.common.util.URI;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.IBaseLabelProvider;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
@@ -70,8 +67,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.layout.GridData;
 
 /**
  * // TODO Add description
@@ -79,35 +79,22 @@ import org.eclipse.swt.layout.GridData;
  * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
  * 
  */
-public class SegmentationView {
-	
-	@Inject
-	IEventBroker eventBroker;
+public class SegmentationView extends DocumentGraphEditor {
+	public SegmentationView() {
+	}
 
-	@Inject
-	private UISynchronize uiSync;
+	EModelService modelService = PlatformUI.getWorkbench().getService(EModelService.class);
 
 	private static final Logger log = LogManager.getLogger(SegmentationView.class);
 
-	private static final String LBL_DEFAULT_VALUE = "Select a Salt document file.";
+	protected static final String GRAPH_EDITOR_ID = "org.corpus_tools.atomic.grapheditor.ui.grapheditor";
 
-	@Inject
-	private SearchService search;
-
-	@Inject
-	ESelectionService selectionService;
+	private SearchService search = new SearchService();
 
 	String documentPath = null;
 
-	private Label lblSelectedDocumentFile;
-
-	private SDocumentGraph graph = null;
-
 	private SortedSetMultimap<String, String> annotations = null;
 
-	private Button btnLoadGraph;
-
-	private IFile documentFile = null;
 	private Combo comboQName;
 
 	private Combo comboValue;
@@ -124,44 +111,19 @@ public class SegmentationView {
 
 	private Button btnAnnotate;
 
+	private IEventBroker eventBroker = PlatformUI.getWorkbench().getService(IEventBroker.class);
+
 	/**
 	 * // TODO Add description
 	 * 
 	 * @param parent
 	 */
 	@PostConstruct
-	public void createPartControl(Composite parent) {
+	public void createEditorPartControl(Composite parent) {
+		// log.trace("SERVICE " + service);
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
 		composite.setLayout(new GridLayout(3, false));
-
-		lblSelectedDocumentFile = new Label(composite, SWT.NONE);
-		lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
-		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(lblSelectedDocumentFile);
-
-		/*
-		 *  Click on button loads the document graph currently selected
-		 *  in the navigation view
-		 */
-		btnLoadGraph = new Button(composite, SWT.PUSH);
-		btnLoadGraph.setText("Load document");
-		btnLoadGraph.setEnabled(false);
-		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnLoadGraph);
-		btnLoadGraph.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if (documentFile != null) {
-					BusyIndicator.showWhile(Display.getCurrent(), () -> graph = SaltUtil
-							.loadDocumentGraph(URI.createURI(documentFile.getLocationURI().toASCIIString())));
-					SegmentationView.this.initializeCombos();
-					SegmentationView.this.viewer.setInput(null);
-				}
-				else {
-					MessageDialog.openError(parent.getShell(), "Cannot load graph",
-							"Cannot load the document graph as the document file seems to be invalid.");
-				}
-			}
-		});
 		Label lblQName = new Label(composite, SWT.NONE);
 		lblQName.setText("Annotation name");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblQName);
@@ -173,29 +135,29 @@ public class SegmentationView {
 		new Label(composite, SWT.NONE);
 
 		/*
-		 * Combobox showing all available qualified names (namespace::name)
-		 * for annotations available in the document graph's nodes.
-		 * On selection, sets the available *values* for the selected
-		 * qualified annotation name to the values combobox. Also
-		 * saves the selected qualified name in the respective field.
+		 * Combobox showing all available qualified names (namespace::name) for
+		 * annotations available in the document graph's nodes. On selection,
+		 * sets the available *values* for the selected qualified annotation
+		 * name to the values combobox. Also saves the selected qualified name
+		 * in the respective field.
 		 */
 		comboQName = new Combo(composite, SWT.READ_ONLY);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).span(1, 1).grab(true, false).applyTo(comboQName);
-		comboQName.setEnabled(false);
 		comboQName.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				String selection = comboQName.getItem(comboQName.getSelectionIndex());
-				BusyIndicator.showWhile(Display.getCurrent(), () -> comboValue.setItems(annotations.get(selection).stream().toArray(v -> new String[v])));
+				BusyIndicator.showWhile(Display.getCurrent(),
+						() -> comboValue.setItems(annotations.get(selection).stream().toArray(v -> new String[v])));
 				comboValue.setEnabled(true);
 				SegmentationView.this.currentQName = selection;
 			}
 		});
 
 		/*
-		 * Combobox showing the valid values for the selected qualified annotation
-		 * name. On selection, activates the load segmentation button and
-		 * saves the current value in the respective field.
+		 * Combobox showing the valid values for the selected qualified
+		 * annotation name. On selection, activates the load segmentation button
+		 * and saves the current value in the respective field.
 		 */
 		comboValue = new Combo(composite, SWT.READ_ONLY);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).span(1, 1).grab(true, false).applyTo(comboValue);
@@ -210,9 +172,8 @@ public class SegmentationView {
 		});
 
 		/*
-		 * Button triggers searching FIXME all corpora? FIXME
-		 * for nodes with qName=value, and fills the table with the
-		 * results.
+		 * Button triggers searching FIXME all corpora? FIXME for nodes with
+		 * qName=value, and fills the table with the results.
 		 */
 		btnLoadSegmentation = new Button(composite, SWT.PUSH);
 		btnLoadSegmentation.setText("Load segmentation");
@@ -231,7 +192,7 @@ public class SegmentationView {
 						monitor.subTask("Searching for segmentation units");
 						MatchGroup result = search.find(segmentationString);
 						monitor.beginTask("Retrieving text for segmentation units", result.getMatches().size());
-						uiSync.asyncExec(() -> {
+						Display.getDefault().asyncExec(() -> {
 							List<Segment> segments = new ArrayList<>();
 							try {
 
@@ -271,38 +232,39 @@ public class SegmentationView {
 		});
 
 		viewer = new TableViewer(composite, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
+		// The table viewer provides selection to the selection service
+		getSite().setSelectionProvider(viewer);
 		final TableViewerColumn col = new TableViewerColumn(viewer, SWT.NONE);
-        segmentationTableColumn = col.getColumn();
-        segmentationTableColumn.setText("Segments");
-        segmentationTableColumn.setWidth(100);
-        segmentationTableColumn.setResizable(false);
-        segmentationTableColumn.setMoveable(false);
+		segmentationTableColumn = col.getColumn();
+		segmentationTableColumn.setText("Segments");
+		segmentationTableColumn.setWidth(100);
+		segmentationTableColumn.setResizable(false);
+		segmentationTableColumn.setMoveable(false);
 		col.setLabelProvider(new ColumnLabelProvider() {
-            @Override
-            public String getText(Object element) {
-            	if (element instanceof Segment) {
+			@Override
+			public String getText(Object element) {
+				if (element instanceof Segment) {
 					return element == null ? "" : ((Segment) element).getText();
 				}
 				return "";
-            }
-        });
+			}
+		});
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		
+
 		final Table table = viewer.getTable();
 		GridDataFactory.fillDefaults().span(3, 1).grab(true, true).applyTo(table);
-		
+
 		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
-		    @Override
-		    public void selectionChanged(SelectionChangedEvent event) {
-		        IStructuredSelection selection = viewer.getStructuredSelection();
-		        selectionService.setSelection(selection);
-		        if (!selection.isEmpty() && selection.getFirstElement() instanceof Segment) {
-		        	btnAnnotate.setEnabled(true);
-		        }
-		        else {
-		        	btnAnnotate.setEnabled(false);
-		        }
-		    }
+			@Override
+			public void selectionChanged(SelectionChangedEvent event) {
+				IStructuredSelection selection = viewer.getStructuredSelection();
+				if (!selection.isEmpty() && selection.getFirstElement() instanceof Segment) {
+					btnAnnotate.setEnabled(true);
+				}
+				else {
+					btnAnnotate.setEnabled(false);
+				}
+			}
 		});
 
 		// create the columns
@@ -312,10 +274,10 @@ public class SegmentationView {
 		// make lines and header visible
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
-		
+
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
-		
+
 		btnAnnotate = new Button(composite, SWT.NONE);
 		GridDataFactory.fillDefaults().span(1, 1).grab(false, false).align(SWT.RIGHT, SWT.CENTER).applyTo(btnAnnotate);
 		btnAnnotate.setText("Annotate");
@@ -324,13 +286,32 @@ public class SegmentationView {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				IStructuredSelection selection = viewer.getStructuredSelection();
-				
+
 				Job j = new Job("Building annotation graph for selected segments") {
 
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
+						// Display.getDefault().asyncExec(() -> {try {
+						// IDE.openEditor(getSite().getPage(), getEditorInput(),
+						// GRAPH_EDITOR_ID);
+						// }
+						// catch (PartInitException e) {
+						// // TODO Auto-generated catch block
+						// e.printStackTrace();
+						// }});
+						// try {
+						// IEditorPart part =
+						// PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(getEditorInput(),
+						// "org.corpus_tools.atomic.grapheditor.ui.grapheditor");
+						// log.trace("PART: " + part);
+						// }
+						// catch (PartInitException e1) {
+						// // TODO Auto-generated catch block
+						// e1.printStackTrace();
+						// }
+
 						List<MatchGroup> matchGroups = new ArrayList<>();
-						
+
 						@SuppressWarnings("rawtypes")
 						List selectionList = selection.toList();
 						int units = selectionList.size();
@@ -352,8 +333,44 @@ public class SegmentationView {
 								monitor.worked(1);
 							}
 						}
-						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
-						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
+						IEditorReference[] refs = getSite().getPage().getEditorReferences();
+						for (int i = 0; i < refs.length; i++) {
+							IEditorReference ref = refs[i];
+							log.trace(ref.getId());
+							if (ref.getId().equals(SegmentationView.GRAPH_EDITOR_ID)) {
+								eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
+								eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
+							}
+						}
+						// #####################################
+						// IWorkbenchPartSite site = getSite();
+						// IEditorInput input = getEditorInput();
+						// IEclipseContext context =
+						// PlatformUI.getWorkbench().getService(IEclipseContext.class);
+						// log.trace("CONTACET " + context);
+						// context.set("graph-editor-site", site);
+						// context.set("graph-editor-input", input);
+						//// MPart grep = partService.findPart(GRAPH_EDITOR_ID);
+						//// log.trace("GREP " + partService);
+						////// partService.showPart(grep, PartState.ACTIVATE);
+						// MPart segmentationPart = partService.getActivePart();
+						//// log.trace("SEG PART: " + segmentationPart);
+						//// MPart graphEditorPart =
+						// partService.createPart(GRAPH_EDITOR_ID);
+						//// MPart gep = partService.findPart(GRAPH_EDITOR_ID);
+						//// IEditorDescriptor edRef =
+						// PlatformUI.getWorkbench().getEditorRegistry().findEditor(GRAPH_EDITOR_ID);
+						//// log.trace("EFF " + edRef);
+						// MPart grrr =
+						// partService.createPart("org.corpus_tools.atomic.grapheditor.ui.partdescriptor.grapheditor");
+						//// log.trace("?!?!?! " + grrr);
+						//// EModelService m =
+						// PlatformUI.getWorkbench().getService(EModelService.class);
+						//// log.trace(">>>>>>>>>>>> " + m);
+						// insertEditor(0.5f, EModelService.RIGHT_OF,
+						// segmentationPart, grrr);
+						// ######################################
+
 						return Status.OK_STATUS;
 					}
 
@@ -363,7 +380,54 @@ public class SegmentationView {
 				j.schedule();
 			}
 		});
-		
+
+		initializeCombos();
+
+		IFile nullFile = createNullIFile();
+		try {
+			getSite().getPage().openEditor(new FileEditorInput(nullFile), GRAPH_EDITOR_ID);
+		}
+		catch (PartInitException e1) {
+			e1.printStackTrace();
+		}
+		deleteNullProject();
+	}
+
+	private void deleteNullProject() {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+		IProject project = root.getProject("MyProject");
+		try {
+			project.delete(true, null);
+		}
+		catch (CoreException e) {
+			log.error(e);
+		}
+	}
+
+	private IFile createNullIFile() {
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+		IProject project = root.getProject("MyProject");
+		IFolder folder = project.getFolder("Folder1");
+		IFile file = folder.getFile("Graph Editor");
+		try {
+			if (!project.exists())
+				project.create(null);
+			if (!project.isOpen())
+				project.open(null);
+			if (!folder.exists())
+				folder.create(IResource.NONE, true, null);
+			if (!file.exists()) {
+				byte[] bytes = "File contents".getBytes();
+				InputStream source = new ByteArrayInputStream(bytes);
+				file.create(source, IResource.NONE, null);
+			}
+		}
+		catch (CoreException e) {
+			log.error(e);
+		}
+		return file;
 	}
 
 	protected void initializeCombos() {
@@ -373,18 +437,18 @@ public class SegmentationView {
 		List<SNode> nodes = new ArrayList<>();
 		nodes.addAll(spans);
 		nodes.addAll(structures);
-		Job findAnnotationsJob = new Job("Compiling list of potential segmentation annotations") {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				SubMonitor subMonitor = SubMonitor.convert(monitor, graph.getAnnotations().size());
-				subMonitor.setTaskName("Finding annotations");
+		ProgressMonitorDialog dialog = new ProgressMonitorDialog(Display.getDefault().getActiveShell());
+		try {
+			dialog.run(true, true, monitor -> {
+				monitor.beginTask("Compiling list of potential segmentation annotations",
+						graph.getAnnotations().size());
 				for (SNode s : nodes) {
 					Iterator<SAnnotation> it = s.iterator_SAnnotation();
 					while (it.hasNext()) {
 						SAnnotation anno = it.next();
 						if (anno.getQName() != null && anno.getValue_STEXT() != null) {
 							annotations.put(anno.getQName(), anno.getValue_STEXT());
-							subMonitor.worked(1);
+							monitor.worked(1);
 						}
 						else {
 							log.warn("Found an invalid SAnnotation object: {}.", anno);
@@ -393,7 +457,7 @@ public class SegmentationView {
 				}
 				Set<String> qNames = annotations.keySet();
 				String[] qNameItems = qNames.stream().toArray(ns -> new String[ns]);
-				uiSync.asyncExec(() -> {
+				Display.getDefault().asyncExec(() -> {
 					comboQName.setItems(qNameItems);
 					comboQName.setEnabled(true);
 					comboQName.setFocus();
@@ -402,17 +466,18 @@ public class SegmentationView {
 					segmentationTableColumn.setText("Segments");
 					btnLoadSegmentation.setEnabled(false);
 				});
-				return Status.OK_STATUS;
-
-			}
-		};
-		findAnnotationsJob.setUser(true);
-		findAnnotationsJob.schedule();
+				monitor.done();
+			});
+		}
+		catch (InvocationTargetException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Focus
 	public void setFocus() {
-		btnLoadGraph.setFocus();
+		comboQName.setFocus();
 
 	}
 
@@ -428,7 +493,7 @@ public class SegmentationView {
 	@Inject
 	@Optional
 	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
-		
+
 		if (s == null || s.isEmpty())
 			return;
 
@@ -454,66 +519,63 @@ public class SegmentationView {
 	@Inject
 	@Optional
 	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
-		
-		log.trace("Setting selection to object {} of type {}.", o, o.getClass());
 
-		if (o instanceof ISelection) // Already captured
+		// Avoid NPEs
+		if (o == null) {
+			log.trace("SELECTION == NULL");
 			return;
+		}
 
-		// Test if label exists (inject methods are called before PostConstruct)
-		if (lblSelectedDocumentFile != null)
-			if (o instanceof IFile) {
-				String name = ((IFile) o).getName();
-				if (((IFile) o).getFileExtension().equals("salt") && !("saltProject.salt").equals(name)) {
-					lblSelectedDocumentFile.setText("Selected document file: " + name.substring(0, name.length() - 5));
-					documentFile = (IFile) o;
-					btnLoadGraph.setEnabled(true);
-				}
-				else {
-					lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
-					btnLoadGraph.setEnabled(false);
-				}
+		if (o instanceof ISelection) {// Already captured
+			log.trace("SELECTION > ISelection");
+			return;
+		}
 
-			}
-			else {
-				lblSelectedDocumentFile.setText(LBL_DEFAULT_VALUE);
-				btnLoadGraph.setEnabled(false);
-			}
 	}
 
 	/**
-		 * // TODO Add description
-		 *
-		 * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
-		 * 
-		 */
+	 * // TODO Add description
+	 *
+	 * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
+	 * 
+	 */
 	public class Segment {
-		
+
 		public Segment(String text, SNode node) {
 			this.text = text;
 			this.node = node;
 		}
-		
+
 		private String text;
 		private SNode node;
-		
+
 		/**
 		 * @return the text
 		 */
 		public final String getText() {
 			return text;
 		}
+
 		/**
 		 * @return the node
 		 */
 		public final SNode getNode() {
 			return node;
 		}
-	
+
 	}
-	
+
 	@Focus
 	public void onFocus() {
-		btnLoadGraph.setFocus();
+		log.trace("Focussing the table");
+		viewer.getTable().setFocus();
 	}
+
+	/**
+	 * @return the viewer
+	 */
+	public final TableViewer getViewer() {
+		return viewer;
+	}
+
 }

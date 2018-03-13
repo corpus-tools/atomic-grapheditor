@@ -93,11 +93,11 @@
 	<modules>
   	
   	<module>plugins/org.corpus_tools.atomic.grapheditor.segmentation.api</module>
-  	<module>feature/org.corpus_tools.atomic.grapheditor.feature</module>
+  	<module>plugins/org.corpus_tools.atomic.grapheditor</module>
   	<module>plugins/org.corpus_tools.atomic.grapheditor.ui</module>
   	<module>
   		plugins/org.corpus_tools.atomic.grapheditor.visuals
   	</module>
-  	<module>plugins/org.corpus_tools.atomic.grapheditor</module>
+  	<module>feature/org.corpus_tools.atomic.grapheditor.feature</module>
 	</modules>
 </project>
