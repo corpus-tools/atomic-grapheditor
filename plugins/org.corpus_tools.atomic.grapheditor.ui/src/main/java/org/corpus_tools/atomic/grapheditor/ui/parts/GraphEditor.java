@@ -3,9 +3,11 @@
  */
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import java.util.ArrayList;
-import java.util.Collections;  
+import java.util.ArrayList; 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +15,11 @@ import org.corpus_tools.atomic.grapheditor.model.InfoNode;
 import org.corpus_tools.atomic.grapheditor.model.Subgraph;
 import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
 import org.corpus_tools.salt.common.SDocumentGraph;
+import org.corpus_tools.salt.common.SSpan;
+import org.corpus_tools.salt.common.SToken;
+import org.corpus_tools.salt.common.impl.SSpanImpl;
+import org.corpus_tools.salt.common.impl.STokenImpl;
+import org.corpus_tools.salt.core.SNode;
 import org.corpus_tools.salt.util.SaltUtil;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,6 +35,7 @@ import org.osgi.service.event.EventHandler;
 import com.google.inject.Guice;
 import com.google.inject.util.Modules;
 
+import annis.service.objects.Match;
 import annis.service.objects.MatchGroup;
 
 
@@ -43,16 +51,10 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	private static final String EVENT_DATA = "org.eclipse.e4.data";
 	private SDocumentGraph graph;
 	private boolean dirty;
+	
 
 	public GraphEditor() {
 		super(Guice.createInjector(Modules.override(new GraphEditorModule()).with(new GraphEditorUiModule())));
-//		IEclipseContext context = PlatformUI.getWorkbench().getService(IEclipseContext.class);
-//		if (getEditorInput() == null) {
-//			setInput((IEditorInput) context.get("graph-editor-input"));
-//		}
-//		if (getEditorSite() == null) {
-//			setSite((IWorkbenchPartSite) context.get("graph-editor-site"));
-//		}
 		subscribeToEventBroker();
 		getContentViewer().getContents().setAll(createContents());
 	}
@@ -65,7 +67,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	}
 
 	private List<? extends Object> createContents() {
-		return Collections.singletonList(new InfoNode("Info", "No info avaialbe"));
+		return Collections.singletonList(new InfoNode("Welcome", "Please select segments to annotate and click annotate.\nNote: Has to be done twice the first tie the editor is opened."));
 	}
 	
 	@Override
@@ -91,7 +93,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 						break;
 					}
 					subgraph = buildSubgraph(matchGroups);
-					getContentViewer().getContents().setAll(Collections.singletonList(subgraph));
+					getContentViewer().getContents().setAll(Collections.singletonList(new InfoNode("UPDATED. Contents:", data.toString())));
 				}
 				else {
 					getContentViewer().getContents().setAll(Collections.singletonList(new InfoNode("Subgraph updated. Contents:", data.toString())));
@@ -126,7 +128,30 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	}
 	
 	private Subgraph buildSubgraph(List<MatchGroup> data) {
-		// TODO Auto-generated method stub
+		Set<java.net.URI> deduplicatedSaltIDs = new HashSet<>();
+		for (MatchGroup matchGroup : data) {
+			for (Match match : matchGroup.getMatches()) {
+				deduplicatedSaltIDs.addAll(match.getSaltIDs());
+			}
+		}
+		Set<SToken> subgraphTokens = new HashSet<>();
+		Set<SSpan> subgraphSpans = new HashSet<>();
+		for (java.net.URI id : deduplicatedSaltIDs) {
+			SNode node = graph.getNode(id.toString());
+			Class<? extends SNode> clazz = node.getClass();
+			if (clazz == STokenImpl.class) {
+				subgraphTokens.add((SToken) node);
+			}
+			else if (clazz == SSpanImpl.class) {
+				subgraphSpans.add(((SSpan) node));
+			}
+		}
+		log.trace("TOKENS: ({}) {}", subgraphTokens.size(), subgraphTokens);
+		for (SToken t : subgraphTokens) {
+			log.trace("        {}", graph.getText(t));
+		}
+		log.trace("SPANS: ({}) {}", subgraphSpans.size(), subgraphSpans);
+		Subgraph subgraph = new Subgraph();
 		return null;
 	}
 
@@ -173,4 +198,10 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 		this.dirty = dirty;
 		firePropertyChange(PROP_DIRTY);
 	}
+	
+	@Override
+	public void setFocus() {
+		super.setFocus();
+	}
+
 }

@@ -11,10 +11,10 @@
             id="org.corpus_tools.atomic.grapheditor.ui.segmentationeditor">
       </editor>
       <editor
-            default="false"
-            name="Graph Editor"
             class="org.corpus_tools.atomic.grapheditor.ui.parts.GraphEditor"
-            id="org.corpus_tools.atomic.grapheditor.ui.grapheditor">
+            default="false"
+            id="org.corpus_tools.atomic.grapheditor.ui.grapheditor"
+            name="Graph Editor">
       </editor>
    </extension>
 

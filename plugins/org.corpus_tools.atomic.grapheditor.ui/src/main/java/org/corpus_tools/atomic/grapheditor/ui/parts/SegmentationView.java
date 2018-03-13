@@ -8,16 +8,11 @@ import annis.exceptions.AnnisQLSyntaxException;
 import annis.service.objects.Match;
 import annis.service.objects.MatchGroup;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.api.editors.DocumentGraphEditor;
@@ -28,29 +23,18 @@ import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
 import org.corpus_tools.search.service.SearchService;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.di.Focus;
-import org.eclipse.e4.ui.services.IServiceConstants;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -67,6 +51,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
@@ -79,8 +65,6 @@ import org.eclipse.swt.widgets.Combo;
  * 
  */
 public class SegmentationView extends DocumentGraphEditor {
-	public SegmentationView() {
-	}
 
 	EModelService modelService = PlatformUI.getWorkbench().getService(EModelService.class);
 
@@ -99,7 +83,7 @@ public class SegmentationView extends DocumentGraphEditor {
 	private Combo comboValue;
 
 	private Button btnLoadSegmentation;
-
+	
 	protected String currentQName;
 
 	protected String currentValue;
@@ -109,6 +93,8 @@ public class SegmentationView extends DocumentGraphEditor {
 	private TableColumn segmentationTableColumn;
 
 	private Button btnAnnotate;
+	
+	private String projectName;
 
 	private IEventBroker eventBroker = PlatformUI.getWorkbench().getService(IEventBroker.class);
 
@@ -117,9 +103,8 @@ public class SegmentationView extends DocumentGraphEditor {
 	 * 
 	 * @param parent
 	 */
-	@PostConstruct
 	public void createEditorPartControl(Composite parent) {
-		// log.trace("SERVICE " + service);
+		projectName = ((FileEditorInput) getEditorInput()).getFile().getProject().getName();
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
 		composite.setLayout(new GridLayout(4, false));
@@ -190,7 +175,7 @@ public class SegmentationView extends DocumentGraphEditor {
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
 						monitor.subTask("Searching for segmentation units");
-						MatchGroup result = search.find(segmentationString);
+						MatchGroup result = search.findInProject(segmentationString, projectName);
 						monitor.beginTask("Retrieving text for segmentation units", result.getMatches().size());
 						Display.getDefault().asyncExec(() -> {
 							List<Segment> segments = new ArrayList<>();
@@ -201,15 +186,26 @@ public class SegmentationView extends DocumentGraphEditor {
 									List<java.net.URI> ids = m.getSaltIDs();
 									assert ids.size() == 1;
 									SNode node = graph.getNode(ids.get(0).toString());
-									List<SToken> unsortedOverlappedTokens = graph.getOverlappedTokens(node);
-									List<SToken> sortedOverlappedTokens = graph
-											.getSortedTokenByText(unsortedOverlappedTokens);
-									String segmentText = "";
-									for (SToken tok : sortedOverlappedTokens) {
-										segmentText = segmentText.concat(graph.getText(tok).concat(" "));
+									/* 
+									 * As graphANNIS per default searches across **all** corpora,
+									 * it is possible that matches are found which are
+									 * not in the graph. This would of course return `null`
+									 * and hence this case must be caught.
+									 */
+									if (node != null) {
+										List<SToken> unsortedOverlappedTokens = graph.getOverlappedTokens(node);
+										List<SToken> sortedOverlappedTokens = graph
+												.getSortedTokenByText(unsortedOverlappedTokens);
+										String segmentText = "";
+										for (SToken tok : sortedOverlappedTokens) {
+											segmentText = segmentText.concat(graph.getText(tok).concat(" "));
+										}
+										segments.add(new Segment(segmentText.trim(), node));
+										monitor.worked(1);
 									}
-									segments.add(new Segment(segmentText.trim(), node));
-									monitor.worked(1);
+									else {
+										log.debug("The following matched node is not in the graph: {}. ", ids.get(0));
+									}
 								}
 
 							}
@@ -310,7 +306,7 @@ public class SegmentationView extends DocumentGraphEditor {
 								String nodeAQL = n.getId().replaceAll("salt:/", "");
 								MatchGroup matchGroup = null;
 								try {
-									matchGroup = search.find("annis:node_name=\"" + nodeAQL + "\" _o_ node");
+									matchGroup = search.findInProject("annis:node_name=\"" + nodeAQL + "\" _o_ node", projectName);
 								}
 								catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
 									MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
@@ -323,9 +319,17 @@ public class SegmentationView extends DocumentGraphEditor {
 						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
 						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
 						eventBroker.post(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, getEditorInput());
+						Display.getDefault().asyncExec(() -> {
+						try {
+							IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
+						}
+						catch (PartInitException e1) {
+							// TODO MessageDialog.openError
+							log.error("Could not initialize Graph Editor!", e1);
+						}});
+
 						return Status.OK_STATUS;
 					}
-
 				};
 				j.setUser(true);
 				j.setPriority(Job.LONG);
@@ -334,52 +338,6 @@ public class SegmentationView extends DocumentGraphEditor {
 		});
 
 		initializeCombos();
-
-		IFile nullFile = createNullIFile();
-		try {
-			getSite().getPage().openEditor(new FileEditorInput(nullFile), GRAPH_EDITOR_ID);
-		}
-		catch (PartInitException e1) {
-			e1.printStackTrace();
-		}
-		deleteNullProject();
-	}
-
-	private void deleteNullProject() {
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = workspace.getRoot();
-		IProject project = root.getProject("MyProject");
-		try {
-			project.delete(true, null);
-		}
-		catch (CoreException e) {
-			log.error(e);
-		}
-	}
-
-	private IFile createNullIFile() {
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = workspace.getRoot();
-		IProject project = root.getProject("MyProject");
-		IFolder folder = project.getFolder("Folder1");
-		IFile file = folder.getFile("Graph Editor");
-		try {
-			if (!project.exists())
-				project.create(null);
-			if (!project.isOpen())
-				project.open(null);
-			if (!folder.exists())
-				folder.create(IResource.NONE, true, null);
-			if (!file.exists()) {
-				byte[] bytes = "File contents".getBytes();
-				InputStream source = new ByteArrayInputStream(bytes);
-				file.create(source, IResource.NONE, null);
-			}
-		}
-		catch (CoreException e) {
-			log.error(e);
-		}
-		return file;
 	}
 
 	protected void initializeCombos() {
@@ -433,57 +391,57 @@ public class SegmentationView extends DocumentGraphEditor {
 
 	}
 
-	/**
-	 * This method is kept for E3 compatiblity. You can remove it if you do not
-	 * mix E3 and E4 code. <br/>
-	 * With E4 code you will set directly the selection in ESelectionService and
-	 * you do not receive a ISelection
-	 * 
-	 * @param s
-	 *            the selection received from JFace (E3 mode)
-	 */
-	@Inject
-	@Optional
-	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
-
-		if (s == null || s.isEmpty())
-			return;
-
-		if (s instanceof IStructuredSelection) {
-			IStructuredSelection iss = (IStructuredSelection) s;
-			if (iss.size() == 1)
-				setSelection(iss.getFirstElement());
-			else
-				setSelection(iss.toArray());
-		}
-	}
-
-	/**
-	 * This method manages the selection of your current object. In this example
-	 * we listen to a single Object (even the ISelection already captured in E3
-	 * mode). <br/>
-	 * You should change the parameter type of your received Object to manage
-	 * your specific selection
-	 * 
-	 * @param o
-	 *            : the current object received
-	 */
-	@Inject
-	@Optional
-	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
-
-		// Avoid NPEs
-		if (o == null) {
-			log.trace("SELECTION == NULL");
-			return;
-		}
-
-		if (o instanceof ISelection) {// Already captured
-			log.trace("SELECTION > ISelection");
-			return;
-		}
-
-	}
+//	/**
+//	 * This method is kept for E3 compatiblity. You can remove it if you do not
+//	 * mix E3 and E4 code. <br/>
+//	 * With E4 code you will set directly the selection in ESelectionService and
+//	 * you do not receive a ISelection
+//	 * 
+//	 * @param s
+//	 *            the selection received from JFace (E3 mode)
+//	 */
+//	@Inject
+//	@Optional
+//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
+//
+//		if (s == null || s.isEmpty())
+//			return;
+//
+//		if (s instanceof IStructuredSelection) {
+//			IStructuredSelection iss = (IStructuredSelection) s;
+//			if (iss.size() == 1)
+//				setSelection(iss.getFirstElement());
+//			else
+//				setSelection(iss.toArray());
+//		}
+//	}
+//
+//	/**
+//	 * This method manages the selection of your current object. In this example
+//	 * we listen to a single Object (even the ISelection already captured in E3
+//	 * mode). <br/>
+//	 * You should change the parameter type of your received Object to manage
+//	 * your specific selection
+//	 * 
+//	 * @param o
+//	 *            : the current object received
+//	 */
+//	@Inject
+//	@Optional
+//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
+//
+//		// Avoid NPEs
+//		if (o == null) {
+//			log.trace("SELECTION == NULL");
+//			return;
+//		}
+//
+//		if (o instanceof ISelection) {// Already captured
+//			log.trace("SELECTION > ISelection");
+//			return;
+//		}
+//
+//	}
 
 	/**
 	 * // TODO Add description

@@ -6,6 +6,8 @@ package org.corpus_tools.atomic.grapheditor.parts;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.grapheditor.model.InfoNode;
 import org.corpus_tools.atomic.grapheditor.visuals.InfoNodeVisual;
 import org.eclipse.gef.mvc.fx.parts.AbstractContentPart;
@@ -20,6 +22,8 @@ import com.google.common.collect.SetMultimap;
  * 
  */
 public class InfoNodePart extends AbstractContentPart<InfoNodeVisual> {
+	
+	private static final Logger log = LogManager.getLogger(InfoNodePart.class);
 
 	@Override
 	protected SetMultimap<? extends Object, String> doGetContentAnchorages() {
