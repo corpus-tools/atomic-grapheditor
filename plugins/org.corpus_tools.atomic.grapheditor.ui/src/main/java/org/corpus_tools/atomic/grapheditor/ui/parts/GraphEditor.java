@@ -3,7 +3,7 @@
  */
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import java.util.ArrayList;
+import java.util.ArrayList; 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.atomic.api.editors.GraphicalDocumentGraphEditor;
 import org.corpus_tools.atomic.grapheditor.model.InfoNode;
 import org.corpus_tools.atomic.grapheditor.model.Subgraph;
 import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
@@ -20,15 +21,9 @@ import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.common.impl.SSpanImpl;
 import org.corpus_tools.salt.common.impl.STokenImpl;
 import org.corpus_tools.salt.core.SNode;
-import org.corpus_tools.salt.util.SaltUtil;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.e4.core.services.events.IEventBroker;
-import org.eclipse.emf.common.util.URI;
-import org.eclipse.gef.mvc.fx.ui.parts.AbstractFXEditor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.part.FileEditorInput;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 
@@ -44,14 +39,16 @@ import annis.service.objects.MatchGroup;
  * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
  * 
  */
-public class GraphEditor extends AbstractFXEditor implements EventHandler {
+public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHandler {
 
 	private static final Logger log = LogManager.getLogger(GraphEditor.class);
 	private static final String EVENT_DATA = "org.eclipse.e4.data";
-	private SDocumentGraph graph;
-	private boolean dirty;
 	private Subgraph currentSubgraph;
 
+	/**
+	 * // TODO Add description
+	 * 
+	 */
 	public GraphEditor() {
 		super(Guice.createInjector(Modules.override(new GraphEditorModule()).with(new GraphEditorUiModule())));
 		subscribeToEventBroker();
@@ -62,7 +59,6 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 		Object service = PlatformUI.getWorkbench().getService(IEventBroker.class);
 		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, this);
 		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, this);
-//		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, this);
 	}
 
 	private List<? extends Object> createContents() {
@@ -76,9 +72,9 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 		setPartName("Graph (" + input.getName() + ")");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void handleEvent(Event event) {
-		log.error("CAUGHT EVENT! graph NULL? " + (graph == null) + " -- subgraph NULL? " + (currentSubgraph == null));
 		Object data = event.getProperty(EVENT_DATA);
 		switch (event.getTopic()) {
 		case GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED:
@@ -95,14 +91,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 						log.error("Event data is not the expected List<MatchGroup>. This shouldn't have happened.", e);
 						break;
 					}
-					try {
-						subgraph = buildSubgraph(matchGroups);
-					}
-					catch (NullPointerException e) {
-						// FIXME This should really not throw an NPE once it's
-						// fully implemented!
-						log.trace("Graph Editor does not have an IViewer. Possibly because the part is not visible.");
-					}
+					subgraph = buildSubgraph(matchGroups);
 					getContentViewer().getContents()
 							.setAll(Collections.singletonList(new InfoNode("UPDATED. Contents:", data.toString())));
 				}
@@ -120,23 +109,25 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 			break;
 
 		case GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED:
-			log.trace("BEFORE GRAPH SET: GRAPH = " + graph);
-			if (data instanceof SDocumentGraph) {
-				log.trace("Setting graph for Graph Editor to {}.", data);
-				this.graph = (SDocumentGraph) data;
+			/*
+			 * This is left in in case the graph-setting event is
+			 * faster than the initialization of the graph in 
+			 * GraphicalDocumentGraphEditor.
+			 */
+			if (graph == null) {
+				if (data instanceof SDocumentGraph) {
+					log.trace("Setting graph for Graph Editor to {}.", data);
+					this.graph = (SDocumentGraph) data;
+				}
+				else {
+					log.warn("Data broadcasted on topic {} is not an instance of SDocumentGraph.",
+							GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED);
+				}
 			}
 			else {
-				log.warn("Data broadcasted on topic {} is not an instance of SDocumentGraph.",
-						GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED);
+				log.error("Ignoring event of type {}, as the graph has already been set to {}.", GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
 			}
 			break;
-
-//		case GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED:
-//			if (data instanceof FileEditorInput) {
-//				log.trace("Setting Graph Editor input to the updated input {}.", data);
-//				setInput((FileEditorInput) data);
-//			}
-//			break;
 
 		default:
 			break;
@@ -145,7 +136,6 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	}
 
 	private Subgraph buildSubgraph(List<MatchGroup> data) {
-		log.error(">>>>>>>>>>>>> {}", graph);
 		Set<java.net.URI> deduplicatedSaltIDs = new HashSet<>();
 		for (MatchGroup matchGroup : data) {
 			for (Match match : matchGroup.getMatches()) {
@@ -171,61 +161,6 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 		log.trace("SPANS: ({}) {}", subgraphSpans.size(), subgraphSpans);
 		Subgraph subgraph = new Subgraph();
 		return subgraph;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.part.EditorPart#doSave(org.eclipse.core.runtime.
-	 * IProgressMonitor)
-	 */
-	@Override
-	public void doSave(IProgressMonitor monitor) {
-		IEditorInput input = getEditorInput();
-		if (input instanceof FileEditorInput && ((FileEditorInput) input).getFile().getFileExtension().equals("salt")) {
-			log.trace("Attempting to save editor input to {}.", ((FileEditorInput) input).getPath());
-			IPath resPath = ((FileEditorInput) getEditorInput()).getPath();
-			SaltUtil.saveDocumentGraph(graph, URI.createFileURI(resPath.toOSString()));
-			setDirty(false);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.part.EditorPart#doSaveAs()
-	 */
-	@Override
-	public void doSaveAs() {
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.part.EditorPart#isSaveAsAllowed()
-	 */
-	@Override
-	public boolean isSaveAsAllowed() {
-		return false;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.part.EditorPart#isDirty()
-	 */
-	@Override
-	public boolean isDirty() {
-		return dirty;
-	}
-
-	/**
-	 * @param dirty
-	 *            the dirty to set
-	 */
-	public final void setDirty(boolean dirty) {
-		this.dirty = dirty;
-		firePropertyChange(PROP_DIRTY);
 	}
 
 	@Override

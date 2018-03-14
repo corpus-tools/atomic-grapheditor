@@ -1,6 +1,6 @@
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.SortedSetMultimap; 
 import com.google.common.collect.TreeMultimap;
 
 import annis.exceptions.AnnisQLSemanticsException;
@@ -28,17 +28,14 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.di.Focus;
-import org.eclipse.e4.ui.services.IServiceConstants;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -113,7 +110,7 @@ public class SegmentationView extends DocumentGraphEditor {
 	 */
 	public void createEditorPartControl(Composite parent) {
 		/*
-		 * Open the editor already, so that update works smoothly
+		 * Open the editor here, so that it only needs to be activated later on.
 		 */
 		try {
 			graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true,
@@ -284,7 +281,6 @@ public class SegmentationView extends DocumentGraphEditor {
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection selection = viewer.getStructuredSelection();
-//				setSelection(selection);
 				if (!selection.isEmpty() && selection.getFirstElement() instanceof Segment) {
 					btnAnnotate.setEnabled(true);
 				}
@@ -398,8 +394,7 @@ public class SegmentationView extends DocumentGraphEditor {
 			});
 		}
 		catch (InvocationTargetException | InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("The progress dialog for loading the list of potential segmentations could not be invoked, or has been interrupted.", e);
 		}
 	}
 
@@ -408,58 +403,6 @@ public class SegmentationView extends DocumentGraphEditor {
 		comboQName.setFocus();
 
 	}
-
-//	/**
-//	 * This method is kept for E3 compatiblity. You can remove it if you do not
-//	 * mix E3 and E4 code. <br/>
-//	 * With E4 code you will set directly the selection in ESelectionService and
-//	 * you do not receive a ISelection
-//	 *
-//	 * @param s
-//	 *            the selection received from JFace (E3 mode)
-//	 */
-//	@Inject
-//	@Optional
-//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
-//		if (s == null || s.isEmpty())
-//			return;
-//
-//		if (s instanceof IStructuredSelection) {
-//			IStructuredSelection iss = (IStructuredSelection) s;
-//			if (iss.size() == 1)
-//				setSelection(iss.getFirstElement());
-//			else
-//				setSelection(iss.toArray());
-//		}
-//	}
-//
-//	/**
-//	 * This method manages the selection of your current object. In this example
-//	 * we listen to a single Object (even the ISelection already captured in E3
-//	 * mode). <br/>
-//	 * You should change the parameter type of your received Object to manage
-//	 * your specific selection
-//	 *
-//	 * @param o
-//	 *            : the current object received
-//	 */
-//	@Inject
-//	@Optional
-//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
-//
-//		log.error("SELECTION on Object {}", (o == null ? "null" : o));
-//		// Avoid NPEs
-//		if (o == null) {
-//			log.error("SELECTION == NULL");
-//			return;
-//		}
-//
-//		if (o instanceof ISelection) {// Already captured
-//			log.error("SELECTION > ISelection");
-//			return;
-//		}
-//
-//	}
 
 	/**
 	 * // TODO Add description
@@ -499,11 +442,13 @@ public class SegmentationView extends DocumentGraphEditor {
 
 	}
 
-//	@Override
-//	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
-//		super.init(site, input);
-//		log.trace("POSTING GRAPH!");
-//		eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
-//	}
+	/* (non-Javadoc)
+	 * @see org.corpus_tools.atomic.api.editors.DocumentGraphEditor#init(org.eclipse.ui.IEditorSite, org.eclipse.ui.IEditorInput)
+	 */
+	@Override
+	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
+		super.init(site, input);
+		eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
+	}
 
 }
