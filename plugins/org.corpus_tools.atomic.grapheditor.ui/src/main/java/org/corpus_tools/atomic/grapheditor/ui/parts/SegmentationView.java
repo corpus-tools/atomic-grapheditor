@@ -1,6 +1,6 @@
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import com.google.common.collect.SortedSetMultimap; 
+import com.google.common.collect.SortedSetMultimap;
 import com.google.common.collect.TreeMultimap;
 
 import annis.exceptions.AnnisQLSemanticsException;
@@ -83,7 +83,7 @@ public class SegmentationView extends DocumentGraphEditor {
 	private Combo comboValue;
 
 	private Button btnLoadSegmentation;
-	
+
 	protected String currentQName;
 
 	protected String currentValue;
@@ -93,7 +93,7 @@ public class SegmentationView extends DocumentGraphEditor {
 	private TableColumn segmentationTableColumn;
 
 	private Button btnAnnotate;
-	
+
 	private String projectName;
 
 	private IEventBroker eventBroker = PlatformUI.getWorkbench().getService(IEventBroker.class);
@@ -108,13 +108,14 @@ public class SegmentationView extends DocumentGraphEditor {
 		 * Open the editor already, so that update works smoothly
 		 */
 		try {
-			IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
+			IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true,
+					IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
 		}
 		catch (PartInitException e1) {
 			// TODO MessageDialog.openError
 			log.error("Could not initialize Graph Editor!", e1);
 		}
-		
+
 		projectName = ((FileEditorInput) getEditorInput()).getFile().getProject().getName();
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
@@ -126,7 +127,7 @@ public class SegmentationView extends DocumentGraphEditor {
 		Label lblValue = new Label(composite, SWT.NONE);
 		lblValue.setText("Annotation value");
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(lblValue);
-		
+
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
 
@@ -197,10 +198,11 @@ public class SegmentationView extends DocumentGraphEditor {
 									List<java.net.URI> ids = m.getSaltIDs();
 									assert ids.size() == 1;
 									SNode node = graph.getNode(ids.get(0).toString());
-									/* 
-									 * As graphANNIS per default searches across **all** corpora,
-									 * it is possible that matches are found which are
-									 * not in the graph. This would of course return `null`
+									/*
+									 * As graphANNIS per default searches across
+									 * **all** corpora, it is possible that
+									 * matches are found which are not in the
+									 * graph. This would of course return `null`
 									 * and hence this case must be caught.
 									 */
 									if (node != null) {
@@ -237,7 +239,7 @@ public class SegmentationView extends DocumentGraphEditor {
 				j.schedule();
 			}
 		});
-		
+
 		Button btnReIndex = new Button(composite, SWT.PUSH);
 		btnReIndex.setText("Re-index documents");
 		btnReIndex.addSelectionListener(new SelectionAdapter() {
@@ -317,7 +319,8 @@ public class SegmentationView extends DocumentGraphEditor {
 								String nodeAQL = n.getId().replaceAll("salt:/", "");
 								MatchGroup matchGroup = null;
 								try {
-									matchGroup = search.findInProject("annis:node_name=\"" + nodeAQL + "\" _o_ node", projectName);
+									matchGroup = search.findInProject("annis:node_name=\"" + nodeAQL + "\" _o_ node",
+											projectName);
 								}
 								catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
 									MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
@@ -330,14 +333,6 @@ public class SegmentationView extends DocumentGraphEditor {
 						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
 						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
 						eventBroker.post(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, getEditorInput());
-						Display.getDefault().asyncExec(() -> {
-						try {
-							IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
-						}
-						catch (PartInitException e1) {
-							// TODO MessageDialog.openError
-							log.error("Could not initialize Graph Editor!", e1);
-						}});
 
 						return Status.OK_STATUS;
 					}
@@ -345,6 +340,14 @@ public class SegmentationView extends DocumentGraphEditor {
 				j.setUser(true);
 				j.setPriority(Job.LONG);
 				j.schedule();
+				try {
+					IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID,
+							true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
+				}
+				catch (PartInitException e1) {
+					// TODO MessageDialog.openError
+					log.error("Could not initialize Graph Editor!", e1);
+				}
 			}
 		});
 
@@ -402,57 +405,63 @@ public class SegmentationView extends DocumentGraphEditor {
 
 	}
 
-//	/**
-//	 * This method is kept for E3 compatiblity. You can remove it if you do not
-//	 * mix E3 and E4 code. <br/>
-//	 * With E4 code you will set directly the selection in ESelectionService and
-//	 * you do not receive a ISelection
-//	 * 
-//	 * @param s
-//	 *            the selection received from JFace (E3 mode)
-//	 */
-//	@Inject
-//	@Optional
-//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
-//
-//		if (s == null || s.isEmpty())
-//			return;
-//
-//		if (s instanceof IStructuredSelection) {
-//			IStructuredSelection iss = (IStructuredSelection) s;
-//			if (iss.size() == 1)
-//				setSelection(iss.getFirstElement());
-//			else
-//				setSelection(iss.toArray());
-//		}
-//	}
-//
-//	/**
-//	 * This method manages the selection of your current object. In this example
-//	 * we listen to a single Object (even the ISelection already captured in E3
-//	 * mode). <br/>
-//	 * You should change the parameter type of your received Object to manage
-//	 * your specific selection
-//	 * 
-//	 * @param o
-//	 *            : the current object received
-//	 */
-//	@Inject
-//	@Optional
-//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
-//
-//		// Avoid NPEs
-//		if (o == null) {
-//			log.trace("SELECTION == NULL");
-//			return;
-//		}
-//
-//		if (o instanceof ISelection) {// Already captured
-//			log.trace("SELECTION > ISelection");
-//			return;
-//		}
-//
-//	}
+	// /**
+	// * This method is kept for E3 compatiblity. You can remove it if you do
+	// not
+	// * mix E3 and E4 code. <br/>
+	// * With E4 code you will set directly the selection in ESelectionService
+	// and
+	// * you do not receive a ISelection
+	// *
+	// * @param s
+	// * the selection received from JFace (E3 mode)
+	// */
+	// @Inject
+	// @Optional
+	// public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION)
+	// ISelection s) {
+	//
+	// if (s == null || s.isEmpty())
+	// return;
+	//
+	// if (s instanceof IStructuredSelection) {
+	// IStructuredSelection iss = (IStructuredSelection) s;
+	// if (iss.size() == 1)
+	// setSelection(iss.getFirstElement());
+	// else
+	// setSelection(iss.toArray());
+	// }
+	// }
+	//
+	// /**
+	// * This method manages the selection of your current object. In this
+	// example
+	// * we listen to a single Object (even the ISelection already captured in
+	// E3
+	// * mode). <br/>
+	// * You should change the parameter type of your received Object to manage
+	// * your specific selection
+	// *
+	// * @param o
+	// * : the current object received
+	// */
+	// @Inject
+	// @Optional
+	// public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION)
+	// Object o) {
+	//
+	// // Avoid NPEs
+	// if (o == null) {
+	// log.trace("SELECTION == NULL");
+	// return;
+	// }
+	//
+	// if (o instanceof ISelection) {// Already captured
+	// log.trace("SELECTION > ISelection");
+	// return;
+	// }
+	//
+	// }
 
 	/**
 	 * // TODO Add description
