@@ -50,6 +50,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	private static final String EVENT_DATA = "org.eclipse.e4.data";
 	private SDocumentGraph graph;
 	private boolean dirty;
+	private Subgraph currentSubgraph;
 
 	public GraphEditor() {
 		super(Guice.createInjector(Modules.override(new GraphEditorModule()).with(new GraphEditorUiModule())));
@@ -61,7 +62,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 		Object service = PlatformUI.getWorkbench().getService(IEventBroker.class);
 		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, this);
 		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, this);
-		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, this);
+//		((IEventBroker) service).subscribe(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, this);
 	}
 
 	private List<? extends Object> createContents() {
@@ -77,9 +78,11 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 
 	@Override
 	public void handleEvent(Event event) {
+		log.error("CAUGHT EVENT! graph NULL? " + (graph == null) + " -- subgraph NULL? " + (currentSubgraph == null));
 		Object data = event.getProperty(EVENT_DATA);
 		switch (event.getTopic()) {
 		case GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED:
+			currentSubgraph = new Subgraph();
 			try {
 				if (data instanceof ArrayList) {
 					log.trace("Setting subgraph for GraphEditor.");
@@ -117,6 +120,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 			break;
 
 		case GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED:
+			log.trace("BEFORE GRAPH SET: GRAPH = " + graph);
 			if (data instanceof SDocumentGraph) {
 				log.trace("Setting graph for Graph Editor to {}.", data);
 				this.graph = (SDocumentGraph) data;
@@ -127,12 +131,12 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 			}
 			break;
 
-		case GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED:
-			if (data instanceof FileEditorInput) {
-				log.trace("Setting Graph Editor input to the updated input {}.", data);
-				setInput((FileEditorInput) data);
-			}
-			break;
+//		case GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED:
+//			if (data instanceof FileEditorInput) {
+//				log.trace("Setting Graph Editor input to the updated input {}.", data);
+//				setInput((FileEditorInput) data);
+//			}
+//			break;
 
 		default:
 			break;
@@ -141,6 +145,7 @@ public class GraphEditor extends AbstractFXEditor implements EventHandler {
 	}
 
 	private Subgraph buildSubgraph(List<MatchGroup> data) {
+		log.error(">>>>>>>>>>>>> {}", graph);
 		Set<java.net.URI> deduplicatedSaltIDs = new HashSet<>();
 		for (MatchGroup matchGroup : data) {
 			for (Match match : matchGroup.getMatches()) {

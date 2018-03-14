@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.api.editors.DocumentGraphEditor;
@@ -27,14 +28,17 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.di.Focus;
+import org.eclipse.e4.ui.services.IServiceConstants;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -51,7 +55,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -65,7 +71,7 @@ import org.eclipse.swt.widgets.Combo;
  * 
  */
 public class SegmentationView extends DocumentGraphEditor {
-
+	
 	EModelService modelService = PlatformUI.getWorkbench().getService(EModelService.class);
 
 	private static final Logger log = LogManager.getLogger(SegmentationView.class);
@@ -98,6 +104,8 @@ public class SegmentationView extends DocumentGraphEditor {
 
 	private IEventBroker eventBroker = PlatformUI.getWorkbench().getService(IEventBroker.class);
 
+	private IEditorPart graphEditorPart;
+
 	/**
 	 * // TODO Add description
 	 * 
@@ -108,7 +116,7 @@ public class SegmentationView extends DocumentGraphEditor {
 		 * Open the editor already, so that update works smoothly
 		 */
 		try {
-			IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true,
+			graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID, true,
 					IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
 		}
 		catch (PartInitException e1) {
@@ -276,6 +284,7 @@ public class SegmentationView extends DocumentGraphEditor {
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection selection = viewer.getStructuredSelection();
+//				setSelection(selection);
 				if (!selection.isEmpty() && selection.getFirstElement() instanceof Segment) {
 					btnAnnotate.setEnabled(true);
 				}
@@ -331,8 +340,6 @@ public class SegmentationView extends DocumentGraphEditor {
 							}
 						}
 						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
-						eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
-						eventBroker.post(GraphEditorEventConstants.TOPIC_EDITOR_INPUT_UPDATED, getEditorInput());
 
 						return Status.OK_STATUS;
 					}
@@ -340,14 +347,11 @@ public class SegmentationView extends DocumentGraphEditor {
 				j.setUser(true);
 				j.setPriority(Job.LONG);
 				j.schedule();
-				try {
-					IEditorPart graphEditorPart = getSite().getPage().openEditor(getEditorInput(), GRAPH_EDITOR_ID,
-							true, IWorkbenchPage.MATCH_ID | IWorkbenchPage.MATCH_INPUT);
-				}
-				catch (PartInitException e1) {
-					// TODO MessageDialog.openError
-					log.error("Could not initialize Graph Editor!", e1);
-				}
+				/*
+				 * Editor is already initialized, simply activate here.
+				 * It will wait until the job is run before updating its view.
+				 */
+				getSite().getPage().activate(graphEditorPart);
 			}
 		});
 
@@ -405,63 +409,57 @@ public class SegmentationView extends DocumentGraphEditor {
 
 	}
 
-	// /**
-	// * This method is kept for E3 compatiblity. You can remove it if you do
-	// not
-	// * mix E3 and E4 code. <br/>
-	// * With E4 code you will set directly the selection in ESelectionService
-	// and
-	// * you do not receive a ISelection
-	// *
-	// * @param s
-	// * the selection received from JFace (E3 mode)
-	// */
-	// @Inject
-	// @Optional
-	// public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION)
-	// ISelection s) {
-	//
-	// if (s == null || s.isEmpty())
-	// return;
-	//
-	// if (s instanceof IStructuredSelection) {
-	// IStructuredSelection iss = (IStructuredSelection) s;
-	// if (iss.size() == 1)
-	// setSelection(iss.getFirstElement());
-	// else
-	// setSelection(iss.toArray());
-	// }
-	// }
-	//
-	// /**
-	// * This method manages the selection of your current object. In this
-	// example
-	// * we listen to a single Object (even the ISelection already captured in
-	// E3
-	// * mode). <br/>
-	// * You should change the parameter type of your received Object to manage
-	// * your specific selection
-	// *
-	// * @param o
-	// * : the current object received
-	// */
-	// @Inject
-	// @Optional
-	// public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION)
-	// Object o) {
-	//
-	// // Avoid NPEs
-	// if (o == null) {
-	// log.trace("SELECTION == NULL");
-	// return;
-	// }
-	//
-	// if (o instanceof ISelection) {// Already captured
-	// log.trace("SELECTION > ISelection");
-	// return;
-	// }
-	//
-	// }
+//	/**
+//	 * This method is kept for E3 compatiblity. You can remove it if you do not
+//	 * mix E3 and E4 code. <br/>
+//	 * With E4 code you will set directly the selection in ESelectionService and
+//	 * you do not receive a ISelection
+//	 *
+//	 * @param s
+//	 *            the selection received from JFace (E3 mode)
+//	 */
+//	@Inject
+//	@Optional
+//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) ISelection s) {
+//		if (s == null || s.isEmpty())
+//			return;
+//
+//		if (s instanceof IStructuredSelection) {
+//			IStructuredSelection iss = (IStructuredSelection) s;
+//			if (iss.size() == 1)
+//				setSelection(iss.getFirstElement());
+//			else
+//				setSelection(iss.toArray());
+//		}
+//	}
+//
+//	/**
+//	 * This method manages the selection of your current object. In this example
+//	 * we listen to a single Object (even the ISelection already captured in E3
+//	 * mode). <br/>
+//	 * You should change the parameter type of your received Object to manage
+//	 * your specific selection
+//	 *
+//	 * @param o
+//	 *            : the current object received
+//	 */
+//	@Inject
+//	@Optional
+//	public void setSelection(@Named(IServiceConstants.ACTIVE_SELECTION) Object o) {
+//
+//		log.error("SELECTION on Object {}", (o == null ? "null" : o));
+//		// Avoid NPEs
+//		if (o == null) {
+//			log.error("SELECTION == NULL");
+//			return;
+//		}
+//
+//		if (o instanceof ISelection) {// Already captured
+//			log.error("SELECTION > ISelection");
+//			return;
+//		}
+//
+//	}
 
 	/**
 	 * // TODO Add description
@@ -500,5 +498,12 @@ public class SegmentationView extends DocumentGraphEditor {
 		}
 
 	}
+
+//	@Override
+//	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
+//		super.init(site, input);
+//		log.trace("POSTING GRAPH!");
+//		eventBroker.post(GraphEditorEventConstants.TOPIC_GRAPH_ACTIVE_GRAPH_CHANGED, graph);
+//	}
 
 }
