@@ -260,9 +260,10 @@ public class SegmentationView extends DocumentGraphEditor {
 		final TableViewerColumn col = new TableViewerColumn(viewer, SWT.NONE);
 		segmentationTableColumn = col.getColumn();
 		segmentationTableColumn.setText("Segments");
-		segmentationTableColumn.setWidth(100);
-		segmentationTableColumn.setResizable(false);
+		segmentationTableColumn.setWidth(viewer.getTable().getClientArea().width);
+		segmentationTableColumn.setResizable(true);
 		segmentationTableColumn.setMoveable(false);
+		segmentationTableColumn.pack();
 		col.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
