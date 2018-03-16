@@ -234,6 +234,8 @@ public class SegmentationView extends DocumentGraphEditor {
 							segmentationTableColumn.setText("Segments: " + String.valueOf(segments.size()));
 							SegmentationView.this.viewer.setInput(segments.toArray(new Segment[segments.size()]));
 							SegmentationView.this.viewer.refresh();
+							for (TableColumn column : viewer.getTable().getColumns())
+						        column.pack();
 						});
 						return Status.OK_STATUS;
 					}
@@ -260,9 +262,6 @@ public class SegmentationView extends DocumentGraphEditor {
 		final TableViewerColumn col = new TableViewerColumn(viewer, SWT.NONE);
 		segmentationTableColumn = col.getColumn();
 		segmentationTableColumn.setText("Segments");
-		segmentationTableColumn.setWidth(viewer.getTable().getClientArea().width);
-		segmentationTableColumn.setResizable(true);
-		segmentationTableColumn.setMoveable(false);
 		segmentationTableColumn.pack();
 		col.setLabelProvider(new ColumnLabelProvider() {
 			@Override
@@ -294,6 +293,8 @@ public class SegmentationView extends DocumentGraphEditor {
 		// make lines and header visible
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
+		for (TableColumn column : table.getColumns())
+	        column.pack();
 
 		new Label(composite, SWT.NONE);
 		new Label(composite, SWT.NONE);
