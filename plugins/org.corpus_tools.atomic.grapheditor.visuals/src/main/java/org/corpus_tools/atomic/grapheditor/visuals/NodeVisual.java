@@ -3,6 +3,8 @@
  */
 package org.corpus_tools.atomic.grapheditor.visuals;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.gef.fx.nodes.GeometryNode;
 import org.eclipse.gef.geometry.planar.RoundedRectangle;
 
@@ -14,6 +16,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
 
 /**
@@ -24,8 +27,10 @@ import javafx.scene.text.TextFlow;
  */
 public class NodeVisual extends Region {
 	
-	private static final double HORIZONTAL_PADDING = 20d;
-    private static final double VERTICAL_PADDING = 10d;
+	private static final Logger log = LogManager.getLogger(NodeVisual.class);
+	
+	private static final double HORIZONTAL_PADDING = 5d;
+    private static final double VERTICAL_PADDING = 5d;
     private static final double VERTICAL_SPACING = 5d;
 
     private Text titleText;
@@ -53,10 +58,15 @@ public class NodeVisual extends Region {
         // create title text
         titleText = new Text();
         titleText.setTextOrigin(VPos.TOP);
+        titleText.setTextAlignment(TextAlignment.CENTER);
+        titleText.setFill(Color.RED);
+        // TODO Make font sizes user-settable
+//        titleText.setStyle("-fx-font-size: 11;");
 
         // create description text
         descriptionText = new Text();
         descriptionText.setTextOrigin(VPos.TOP);
+//        descriptionText.setStyle("-fx-font-size: 11;");
 
         // use TextFlow to enable wrapping of the description text within the
         // label bounds

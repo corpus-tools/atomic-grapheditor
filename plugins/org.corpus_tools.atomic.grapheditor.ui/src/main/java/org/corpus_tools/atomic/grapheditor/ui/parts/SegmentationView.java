@@ -17,7 +17,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.api.editors.DocumentGraphEditor;
-import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
+import org.corpus_tools.atomic.grapheditor.ui.constants.GraphEditorEventConstants;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;

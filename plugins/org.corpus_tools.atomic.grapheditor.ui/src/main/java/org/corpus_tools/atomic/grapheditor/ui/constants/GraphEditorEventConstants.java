@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.corpus_tools.atomic.grapheditor.ui;
+package org.corpus_tools.atomic.grapheditor.ui.constants;
 
 /**
  * @noimplement This interface is not intended to be implemented by clients.

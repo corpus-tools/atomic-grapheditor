@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.api.editors.GraphicalDocumentGraphEditor;
 import org.corpus_tools.atomic.grapheditor.model.InfoNode;
 import org.corpus_tools.atomic.grapheditor.model.Subgraph;
-import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
+import org.corpus_tools.atomic.grapheditor.ui.constants.GraphEditorEventConstants;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
@@ -157,7 +157,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 				subgraphStructures.add((SStructure) node);
 			}
 		}
-		Subgraph subgraph = new Subgraph(subgraphTokens, subgraphSpans, subgraphStructures);
+		Subgraph subgraph = new Subgraph(graph, subgraphTokens, subgraphSpans, subgraphStructures);
 		return subgraph;
 	}
 
