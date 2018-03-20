@@ -3,7 +3,7 @@
  */
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import org.corpus_tools.atomic.grapheditor.parts.SubGraphPartFactory;
+import org.corpus_tools.atomic.grapheditor.parts.SubgraphPartFactory;
 import org.eclipse.gef.mvc.fx.MvcFxModule;
 import org.eclipse.gef.mvc.fx.parts.IContentPartFactory;
 
@@ -22,7 +22,7 @@ public class GraphEditorModule extends MvcFxModule {
 	}
 
 	protected void bindIContentPartFactory() {
-		binder().bind(IContentPartFactory.class).to(SubGraphPartFactory.class);
+		binder().bind(IContentPartFactory.class).to(SubgraphPartFactory.class);
 	}
 
 

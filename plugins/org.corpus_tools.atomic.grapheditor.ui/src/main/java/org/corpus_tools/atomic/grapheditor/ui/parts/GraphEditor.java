@@ -17,8 +17,10 @@ import org.corpus_tools.atomic.grapheditor.model.Subgraph;
 import org.corpus_tools.atomic.grapheditor.ui.GraphEditorEventConstants;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
+import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.common.impl.SSpanImpl;
+import org.corpus_tools.salt.common.impl.SStructureImpl;
 import org.corpus_tools.salt.common.impl.STokenImpl;
 import org.corpus_tools.salt.core.SNode;
 import org.eclipse.e4.core.services.events.IEventBroker;
@@ -43,7 +45,6 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 
 	private static final Logger log = LogManager.getLogger(GraphEditor.class);
 	private static final String EVENT_DATA = "org.eclipse.e4.data";
-	private Subgraph currentSubgraph;
 
 	/**
 	 * // TODO Add description
@@ -78,11 +79,9 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 		Object data = event.getProperty(EVENT_DATA);
 		switch (event.getTopic()) {
 		case GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED:
-			currentSubgraph = new Subgraph();
 			try {
 				if (data instanceof ArrayList) {
 					log.trace("Setting subgraph for GraphEditor.");
-					Subgraph subgraph = null;
 					List<MatchGroup> matchGroups = null;
 					try {
 						matchGroups = (List<MatchGroup>) data;
@@ -91,9 +90,9 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 						log.error("Event data is not the expected List<MatchGroup>. This shouldn't have happened.", e);
 						break;
 					}
-					subgraph = buildSubgraph(matchGroups);
+					Subgraph subgraph = buildSubgraph(matchGroups);
 					getContentViewer().getContents()
-							.setAll(Collections.singletonList(new InfoNode("UPDATED. Contents:", data.toString())));
+							.setAll(Collections.singletonList(subgraph));
 				}
 				else {
 					getContentViewer().getContents().setAll(
@@ -144,6 +143,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 		}
 		Set<SToken> subgraphTokens = new HashSet<>();
 		Set<SSpan> subgraphSpans = new HashSet<>();
+		Set<SStructure> subgraphStructures = new HashSet<>();
 		for (java.net.URI id : deduplicatedSaltIDs) {
 			SNode node = graph.getNode(id.toString());
 			Class<? extends SNode> clazz = node.getClass();
@@ -153,13 +153,11 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 			else if (clazz == SSpanImpl.class) {
 				subgraphSpans.add(((SSpan) node));
 			}
+			else if (clazz == SStructureImpl.class) {
+				subgraphStructures.add((SStructure) node);
+			}
 		}
-		log.trace("TOKENS: ({}) {}", subgraphTokens.size(), subgraphTokens);
-		for (SToken t : subgraphTokens) {
-			log.trace("        {}", graph.getText(t));
-		}
-		log.trace("SPANS: ({}) {}", subgraphSpans.size(), subgraphSpans);
-		Subgraph subgraph = new Subgraph();
+		Subgraph subgraph = new Subgraph(subgraphTokens, subgraphSpans, subgraphStructures);
 		return subgraph;
 	}
 
