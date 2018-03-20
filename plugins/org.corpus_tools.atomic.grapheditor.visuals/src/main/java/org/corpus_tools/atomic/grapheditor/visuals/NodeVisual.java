@@ -3,7 +3,7 @@
  */
 package org.corpus_tools.atomic.grapheditor.visuals;
 
-import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.LogManager; 
 import org.apache.logging.log4j.Logger;
 import org.eclipse.gef.fx.nodes.GeometryNode;
 import org.eclipse.gef.geometry.planar.RoundedRectangle;
@@ -35,7 +35,6 @@ public class NodeVisual extends Region {
     private static final double VERTICAL_SPACING = 5d;
 
     private Text titleText;
-    private TextFlow descriptionFlow;
     private Text descriptionText;
     private GeometryNode<RoundedRectangle> shape;
     private VBox labelVBox;
@@ -43,7 +42,6 @@ public class NodeVisual extends Region {
     public NodeVisual() {
         // create background shape
         shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
-        shape.setFill(Color.LIGHTGREEN);
         shape.setStroke(Color.BLACK);
 
         // create vertical box for title and description
@@ -60,7 +58,7 @@ public class NodeVisual extends Region {
         titleText = new Text();
         titleText.setTextOrigin(VPos.TOP);
         titleText.setTextAlignment(TextAlignment.CENTER);
-        titleText.setFill(Color.RED);
+        titleText.setFill(Color.BURLYWOOD);
         // TODO Make font sizes user-settable
 //        titleText.setStyle("-fx-font-size: 11;");
 
@@ -68,13 +66,6 @@ public class NodeVisual extends Region {
         descriptionText = new Text();
         descriptionText.setTextOrigin(VPos.TOP);
 //        descriptionText.setStyle("-fx-font-size: 11;");
-
-        // use TextFlow to enable wrapping of the description text within the
-        // label bounds
-//        descriptionFlow = new TextFlow(descriptionText);
-        // only constrain the width, so that the height is computed in
-        // dependence on the width
-//        descriptionFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
 
         // vertically lay out title and description
         labelVBox.getChildren().addAll(titleText, descriptionText);
@@ -112,7 +103,6 @@ public class NodeVisual extends Region {
     @Override
     protected double computePrefWidth(double height) {
         return minWidth(height);
-//    	return computeMinWidth(height);
     }
 
     @Override

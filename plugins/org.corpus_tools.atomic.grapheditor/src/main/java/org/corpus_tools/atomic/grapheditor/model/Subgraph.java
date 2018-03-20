@@ -71,69 +71,6 @@ public class Subgraph {
 						new Double(x * i));
 			}
 		}
-		calculateTokenWidths(tokens);
-	}
-
-	private void calculateTokenWidths(Set<SToken> tokens) {
-		Group root = new Group();
-
-		for (SToken t : tokens) {
-			if (t.getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) == null) {
-				//// Scene s = new Scene(root);
-				// NodeVisual v = new NodeVisual();
-				// v.setTitle(graph.getText(t));
-				// v.setDescription(t.getId().split("#")[1]);
-				// v.setMinSize(-1.0, -1.0);
-				// root.getChildren().add(v);
-				// root.applyCss();
-				// root.layout();
-				//// v.setPrefSize(v.getShape().getWidth(),
-				//// v.getShape().getHeight());
-				//// v.getTitleText().getw
-				// double width = v.getWidth();
-				//// double height = v.getHeight();
-				// log.trace(graph.getText(t) + ": " + width);
-				final Text textText = new Text(graph.getText(t));
-				final Text idText = new Text(t.getId().split("#")[1]);
-				Scene scene1 = new Scene(new Group(textText, idText));
-				textText.applyCss();
-				idText.applyCss();
-				final double textWidth = textText.getLayoutBounds().getWidth();
-				final double idWidth = idText.getLayoutBounds().getWidth();
-				double width = -1d;
-				if (textWidth > idWidth) {
-//					log.trace("TEXT > ID");
-					width = textWidth;
-				}
-				else {
-//					log.trace("TEXT < ID");
-					width = idWidth;
-				}
-				final Text textText2 = new Text(graph.getText(t));
-				final Text idText2 = new Text(t.getId().split("#")[1]);
-				Scene scene2 = new Scene(new Group(idText, textText));
-				textText2.applyCss();
-				idText2.applyCss();
-				final double idWidth2 = idText.getLayoutBounds().getWidth();
-				final double textWidth2 = textText.getLayoutBounds().getWidth();
-				double width2 = -1d;
-				if (textWidth2 > idWidth2) {
-//					log.trace("TEXT2 > ID2");
-					width2 = textWidth2;
-				}
-				else {
-//					log.trace("TEXT2 < ID2");
-					width2 = idWidth;
-				}
-				double w = width2 > width ? width2 : width;
-				log.trace("{} -- T1: {}, ID1: {}, T2: {}, ID2: {}, WIDTH = {}", graph.getText(t), textWidth, idWidth, textWidth2, idWidth2, w + 10d);
-				t.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(w));
-			}
-		}
-
-		// stage.setScene(scene);
-		// stage.show();
-
 	}
 
 	/**

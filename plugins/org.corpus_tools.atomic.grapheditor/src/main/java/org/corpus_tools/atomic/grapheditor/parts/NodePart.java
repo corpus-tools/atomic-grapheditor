@@ -18,6 +18,7 @@ import org.eclipse.gef.mvc.fx.parts.AbstractContentPart;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 
 /**
@@ -54,28 +55,14 @@ public class NodePart extends AbstractContentPart<NodeVisual> {
         Random r = new Random();
         double randomValue = 10 + (400 - 10) * r.nextDouble();
         double x = randomValue;
-        if (getContent() instanceof SToken) {
-        	if (getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) != null) {
-        		x = getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME).getValue_SFLOAT();
-        	}
-        }
-        double y = getContent() instanceof SToken ? 100 : 200;
-        double width = getContent() instanceof SToken ? getContent().getProcessingAnnotation(GEProcConstants.WIDTH_QNAME).getValue_SFLOAT() : 200;
-        Rectangle rec = new Rectangle(x, y, width, 20);
+        double y = 200;
+        Rectangle rec = new Rectangle(x, y, 20, 20);
 
-        if (getContent() instanceof SToken) {
-        	visual.setTitle(((SDocumentGraph) getContent().getGraph()).getText((SToken) getContent()));
-        	visual.setDescription(node.getId().split("#")[1]); // TODO FIXME?
-        }
-        else {
-        	visual.setDescription(node.getId().split("#")[1]); // TODO FIXME?
-        	visual.setDescription(node.getAnnotations().toString()); // TODO FIXME
-        }
-//      TODO  visual.setColor(node.getColor());
-        visual.setColor(Color.ANTIQUEWHITE);
+       	visual.setTitle(node.getId().split("#")[1]); // TODO FIXME?
+       	visual.setDescription(node.getAnnotations().toString()); // TODO FIXME
+        visual.setColor(Color.LIGHTSLATEGREY);
         
         visual.setPrefSize(rec.getWidth(), rec.getHeight());
-//        visual.setMinSize(rec.getWidth(), rec.getHeight());
         // perform layout pass so that visual is resized to its preferred size
         visual.getParent().layout();
 
