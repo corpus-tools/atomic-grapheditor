@@ -15,6 +15,7 @@ import javafx.scene.Group;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.text.TextFlow;
@@ -70,13 +71,13 @@ public class NodeVisual extends Region {
 
         // use TextFlow to enable wrapping of the description text within the
         // label bounds
-        descriptionFlow = new TextFlow(descriptionText);
+//        descriptionFlow = new TextFlow(descriptionText);
         // only constrain the width, so that the height is computed in
         // dependence on the width
-        descriptionFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
+//        descriptionFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
 
         // vertically lay out title and description
-        labelVBox.getChildren().addAll(titleText, descriptionFlow);
+        labelVBox.getChildren().addAll(titleText, descriptionText);
 
         // ensure title is always visible (see also #computeMinWidth(double) and
         // #computeMinHeight(double) methods)
@@ -98,7 +99,9 @@ public class NodeVisual extends Region {
     @Override
     public double computeMinWidth(double height) {
         // ensure title is always visible
-        return titleText.getLayoutBounds().getWidth() + HORIZONTAL_PADDING * 2;
+    	double ttWidth = titleText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
+    	double dtWidth = descriptionText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
+    	return (dtWidth > ttWidth ? dtWidth : ttWidth);
     }
 
     @Override
@@ -109,6 +112,7 @@ public class NodeVisual extends Region {
     @Override
     protected double computePrefWidth(double height) {
         return minWidth(height);
+//    	return computeMinWidth(height);
     }
 
     @Override

@@ -9,6 +9,7 @@ import java.util.Random;
 
 import org.corpus_tools.atomic.grapheditor.constants.GEProcConstants;
 import org.corpus_tools.atomic.grapheditor.visuals.NodeVisual;
+import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SNode;
 import org.eclipse.gef.geometry.planar.Rectangle;
@@ -59,14 +60,22 @@ public class NodePart extends AbstractContentPart<NodeVisual> {
         	}
         }
         double y = getContent() instanceof SToken ? 100 : 200;
-        Rectangle rec = new Rectangle(x, y, 100, 20);
+        double width = getContent() instanceof SToken ? getContent().getProcessingAnnotation(GEProcConstants.WIDTH_QNAME).getValue_SFLOAT() : 200;
+        Rectangle rec = new Rectangle(x, y, width, 20);
 
-        visual.setTitle(node.getId().split("#")[1]); // TODO FIXME?
-        visual.setDescription(node.getAnnotations().toString()); // TODO FIXME
+        if (getContent() instanceof SToken) {
+        	visual.setTitle(((SDocumentGraph) getContent().getGraph()).getText((SToken) getContent()));
+        	visual.setDescription(node.getId().split("#")[1]); // TODO FIXME?
+        }
+        else {
+        	visual.setDescription(node.getId().split("#")[1]); // TODO FIXME?
+        	visual.setDescription(node.getAnnotations().toString()); // TODO FIXME
+        }
 //      TODO  visual.setColor(node.getColor());
         visual.setColor(Color.ANTIQUEWHITE);
         
         visual.setPrefSize(rec.getWidth(), rec.getHeight());
+//        visual.setMinSize(rec.getWidth(), rec.getHeight());
         // perform layout pass so that visual is resized to its preferred size
         visual.getParent().layout();
 
