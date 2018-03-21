@@ -63,7 +63,7 @@ private static final Logger log = LogManager.getLogger(NodeVisual.class);
         titleText.setTextAlignment(TextAlignment.CENTER);
         titleText.setFill(Color.RED);
         // TODO Make font sizes user-settable
-//        titleText.setStyle("-fx-font-size: 24;");
+//        titleText.setStyle("-fx-font-size: 16;");
 
         // create description text
         descriptionText = new Text();
@@ -90,12 +90,20 @@ private static final Logger log = LogManager.getLogger(NodeVisual.class);
         return labelVBox.minHeight(width);
     }
 
+    /* (non-Javadoc)
+     * @see org.corpus_tools.atomic.grapheditor.visuals.NodeVisual#computeMinWidth(double)
+     */
+    /**
+     * If you change something here, it must also be changed in the pre-calculation
+     * of token widths in Subgraph.calculateTokenLayout(Set<SToken>)!
+     */
     @Override
     public double computeMinWidth(double height) {
         // ensure title is always visible
     	double ttWidth = titleText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
     	double dtWidth = descriptionText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
-    	return (dtWidth > ttWidth ? dtWidth : ttWidth);
+    	double minWidth = dtWidth > ttWidth ? dtWidth : ttWidth; 
+    	return minWidth < 100d ? 100d : minWidth;
     }
 
     @Override

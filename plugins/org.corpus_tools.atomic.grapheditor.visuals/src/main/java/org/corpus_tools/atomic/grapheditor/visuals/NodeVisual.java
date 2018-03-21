@@ -39,6 +39,8 @@ public class NodeVisual extends Region {
     private GeometryNode<RoundedRectangle> shape;
     private VBox labelVBox;
 
+	private TextFlow descriptionFlow;
+
     public NodeVisual() {
         // create background shape
         shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
@@ -65,13 +67,17 @@ public class NodeVisual extends Region {
         // create description text
         descriptionText = new Text();
         descriptionText.setTextOrigin(VPos.TOP);
+        descriptionFlow = new TextFlow(descriptionText);
+        // only constrain the width, so that the height is computed in
+        // dependence on the width
+        descriptionFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
 //        descriptionText.setStyle("-fx-font-size: 11;");
         
         // TODO Create annotation texts
 //        for (annoText : annotationTexts)
 
         // vertically lay out title and description
-        labelVBox.getChildren().addAll(titleText, descriptionText);
+        labelVBox.getChildren().addAll(titleText, descriptionFlow);//Text);
 
         // ensure title is always visible (see also #computeMinWidth(double) and
         // #computeMinHeight(double) methods)
@@ -94,8 +100,8 @@ public class NodeVisual extends Region {
     public double computeMinWidth(double height) {
         // ensure title is always visible
     	// FIXME: Include annotation texts, calculate via Collections.max like in Subgraph#calculateLayoutTokens
-    	double ttWidth = titleText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
-    	double dtWidth = descriptionText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
+    	double ttWidth = titleText.getLayoutBounds().getWidth();// + (HORIZONTAL_PADDING * 2);
+    	double dtWidth = descriptionText.getLayoutBounds().getWidth();// + (HORIZONTAL_PADDING * 2);
     	return (dtWidth > ttWidth ? dtWidth : ttWidth);
     }
 

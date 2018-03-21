@@ -9,14 +9,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.grapheditor.constants.GEProcConstants;
@@ -32,7 +29,10 @@ import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
 
+import javafx.scene.Group;
+import javafx.scene.Scene;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextBuilder;
 
 /**
  * // TODO Add description
@@ -42,7 +42,9 @@ import javafx.scene.text.Text;
  */
 public class Subgraph {
 
-	private static final double MARGIN_DEFAULT = 100d;
+	private static final int Y_MARGIN_DEFAULT = 100;
+
+	private static final double MARGIN_DEFAULT = 20d;
 
 	private static final double X_DEFAULT = 100d;
 
@@ -88,25 +90,32 @@ public class Subgraph {
 		for (SToken t : orderedTokens) {
 			// Prepare the coords map entry for this token
 			// Pre-calculate widths to calculate x coords.
-			Set<Double> internalWidthsSet = new HashSet<>();
-			Set<Text> textSet = new HashSet<>();
-			Text textText = new Text(graph.getText(t));
-//			textText.setStyle("-fx-font-size: 24;");
-			textSet.add(textText);
-			Text idText = new Text(t.getId().split("#")[1]);
+			// Pre-render off-screen
+			Group offScreenRoot = new Group();
+	        Scene offScreen = new Scene(offScreenRoot, 1024, 768);
+//	        offScreenRoot.getChildren().addAll(untransformed, line1, line2);
+	        Set<Double> internalWidthsSet = new HashSet<>();
+	        Set<Text> textSet = new HashSet<>();
+	        Text textText = new Text(graph.getText(t));
+	        
+	        textSet.add(textText);
+	        Text idText = new Text(t.getId().split("#")[1]);
 //			idText.setStyle("-fx-font-size: 24;");
-			textSet.add(idText);
-			for (SAnnotation a : t.getAnnotations()) {
-				textSet.add(new Text(a.getQName() + ":" + a.getValue_STEXT()));
-			}
-			for (Text text : textSet) {
-				text.applyCss();
-			}
+	        textSet.add(idText);
+	        for (SAnnotation a : t.getAnnotations()) {
+	        	textSet.add(new Text(a.getQName() + ":" + a.getValue_STEXT()));
+	        }
+	        for (Text text : textSet) {
+	        	text.setStyle("-fx-font-size: 48;");
+	        	text.applyCss();
+	        	offScreenRoot.getChildren().add(text);
+	        }
 			for (Text text : textSet) {
 				internalWidthsSet.add(text.getLayoutBounds().getWidth() + (GEProcConstants.HORIZONTAL_PADDING * 2));
 
 			}
 			double width = Collections.max(internalWidthsSet);
+			width = width < GEProcConstants.MIN_TOKEN_WIDTH ? GEProcConstants.MIN_TOKEN_WIDTH : width;
 			widthsList.add(width);
 			if (t.getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) == null) {
 				t.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(width));
@@ -148,7 +157,7 @@ public class Subgraph {
 		Map<AnnotationSet, ArrayList<DisplayLevel>> sortedLevels = levelsBySpanAnnotations.entrySet().stream().sorted(byNumberOfSpan.reversed()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		// Write processing annotations
 		int level = 1;
-		double yDefault = 100;
+		double yDefault = Y_MARGIN_DEFAULT;
 		for (Entry<AnnotationSet, ArrayList<DisplayLevel>> entry : sortedLevels.entrySet()) {
 			for (DisplayLevel v : entry.getValue()) {
 				for (DisplaySpan ds : v.getDisplaySpans()) {
