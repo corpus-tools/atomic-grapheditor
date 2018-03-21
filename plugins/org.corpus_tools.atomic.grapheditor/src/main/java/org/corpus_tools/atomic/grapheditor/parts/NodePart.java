@@ -56,7 +56,17 @@ public class NodePart extends AbstractContentPart<NodeVisual> {
         double randomValue = 10 + (400 - 10) * r.nextDouble();
         double x = randomValue;
         double y = 200;
-        Rectangle rec = new Rectangle(x, y, 20, 20);
+        double width = 20; 
+        if (getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) != null) {
+			x = getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME).getValue_SFLOAT();
+		}
+        if (getContent().getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) != null) {
+			width = getContent().getProcessingAnnotation(GEProcConstants.WIDTH_QNAME).getValue_SFLOAT();
+		}
+        if (getContent().getProcessingAnnotation(GEProcConstants.YCOORD_QNAME) != null) {
+			y = getContent().getProcessingAnnotation(GEProcConstants.YCOORD_QNAME).getValue_SFLOAT();
+		}
+        Rectangle rec = new Rectangle(x, y, width, 20);
 
        	visual.setTitle(node.getId().split("#")[1]); // TODO FIXME?
        	visual.setDescription(node.getAnnotations().toString()); // TODO FIXME

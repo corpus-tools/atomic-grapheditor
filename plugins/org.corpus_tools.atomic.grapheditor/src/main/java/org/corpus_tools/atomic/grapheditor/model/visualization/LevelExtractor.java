@@ -1,0 +1,128 @@
+/**
+ * 
+ */
+package org.corpus_tools.atomic.grapheditor.model.visualization;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import org.corpus_tools.salt.common.SDocumentGraph;
+import org.corpus_tools.salt.common.SSpan;
+import org.corpus_tools.salt.common.SToken;
+
+/**
+ * // TODO Add description
+ *
+ * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
+ * 
+ */
+public class LevelExtractor {
+
+
+	/**
+	 * // TODO Add description
+	 * 
+	 * @param graph
+	 * @param spans
+	 * @param tokenCoords
+	 * @return
+	 */
+	public static LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> computeSpanLevels(SDocumentGraph graph,
+			Set<SSpan> spans, Map<SToken, DisplayCoordinates> tokenCoords) {
+
+		LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> levelsByAnnotation = new LinkedHashMap<>();
+		// Create a new list of levels for each set of qualified annotation names
+		for (SSpan span : spans) {
+			levelsByAnnotation.put(new AnnotationSet(span.getAnnotations()), new ArrayList<DisplayLevel>());
+		}
+
+		for (SSpan span : spans) {
+			List<SToken> tokens = graph.getOverlappedTokens(span);
+			List<SToken> sortedTokens = graph.getSortedTokenByText(tokens);
+			addAnnotationsForSpan(span, tokenCoords, sortedTokens, levelsByAnnotation);
+		}
+		
+		
+		
+		
+		
+			// Get the left-most and right-most coordinates for each span
+//			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
+//			double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+
+//		}
+
+		// Merge rows
+		for (Map.Entry<AnnotationSet, ArrayList<DisplayLevel>> e : levelsByAnnotation.entrySet()) {
+			mergeAllRowsIfPossible(e.getValue());
+		}
+
+		return levelsByAnnotation;
+	}
+
+	private static void addAnnotationsForSpan(SSpan span, Map<SToken, DisplayCoordinates> tokenCoords, List<SToken> sortedTokens, LinkedHashMap<AnnotationSet,ArrayList<DisplayLevel>> levelsByAnnotation) {
+		double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
+		double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+		DisplaySpan displaySpan = new DisplaySpan(span, left, right);
+		// FIXME: Don't calculate for all annotations, calculate for set of annotations!
+		AnnotationSet annoSet = new AnnotationSet(span.getAnnotations());
+		ArrayList<DisplayLevel> levels = levelsByAnnotation.get(annoSet);
+			if (levels != null) {
+				// only do something if the annotation was defined before
+				
+				// 1. give each set of annotations of each span an own row
+				DisplayLevel level = new DisplayLevel();
+				
+				for (SToken t : sortedTokens) {
+					displaySpan.getCoveredIDs().add(t.getId());
+				}
+				level.addDisplaySpan(displaySpan);
+				levels.add(level);
+			}
+	}
+
+	private static void mergeAllRowsIfPossible(ArrayList<DisplayLevel> levels) {
+		/*
+		 * Use fixed seed in order to get consistent results (with random
+		 * properties)
+		 */
+		Random rand = new Random(5711l);
+		int tries = 0;
+		// this should be enough to be quite sure we don't miss any
+		// optimalization
+		// possibility
+		final int maxTries = levels.size() * 2;
+
+		// do this loop until we successfully merged everything into one row
+		// or we give up until too much tries
+		while (levels.size() > 1 && tries < maxTries) {
+			// choose two random entries
+			int oneIdx = rand.nextInt(levels.size());
+			int secondIdx = rand.nextInt(levels.size());
+			if (oneIdx == secondIdx) {
+				// try again if we choose the same rows by accident
+				continue;
+			}
+
+			DisplayLevel one = levels.get(oneIdx);
+			DisplayLevel second = levels.get(secondIdx);
+
+			if (one.merge(second)) {
+				// remove the second one since it is merged into the first
+				levels.remove(secondIdx);
+
+				// success: reset counter
+				tries = 0;
+			}
+			else {
+				// increase counter to avoid endless loops if no improvement is
+				// possible
+				tries++;
+			}
+		}
+	}
+
+}

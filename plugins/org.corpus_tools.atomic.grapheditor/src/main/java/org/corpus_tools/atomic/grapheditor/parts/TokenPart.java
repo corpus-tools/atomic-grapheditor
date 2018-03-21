@@ -22,6 +22,8 @@ import javafx.scene.paint.Color;
  */
 public class TokenPart extends NodePart {
 	
+	private static final double Y_DEFAULT = 0d;
+
 	@Override
     protected NodeVisual doCreateVisual() {
         return new TokenVisual();
@@ -39,7 +41,7 @@ public class TokenPart extends NodePart {
 		if (getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) != null) {
 			x = getContent().getProcessingAnnotation(GEProcConstants.XCOORD_QNAME).getValue_SFLOAT();
 		}
-		double y = 100;
+		double y = Y_DEFAULT;
 		Rectangle rec = new Rectangle(x, y, 20, 20);
 
 		visual.setTitle(((SDocumentGraph) getContent().getGraph()).getText((SToken) getContent()));

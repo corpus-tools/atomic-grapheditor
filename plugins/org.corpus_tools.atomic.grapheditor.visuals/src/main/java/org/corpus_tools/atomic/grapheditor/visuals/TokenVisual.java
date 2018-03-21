@@ -30,6 +30,9 @@ public class TokenVisual extends NodeVisual {
 	
 private static final Logger log = LogManager.getLogger(NodeVisual.class);
 	
+	/**
+	 * Must be the same value as org.corpus_tools.atomic.grapheditor.constants.GEProcConstants.HORIZONTAL_PADDING!
+	 */
 	private static final double HORIZONTAL_PADDING = 5d;
     private static final double VERTICAL_PADDING = 5d;
     private static final double VERTICAL_SPACING = 5d;
@@ -60,12 +63,12 @@ private static final Logger log = LogManager.getLogger(NodeVisual.class);
         titleText.setTextAlignment(TextAlignment.CENTER);
         titleText.setFill(Color.RED);
         // TODO Make font sizes user-settable
-//        titleText.setStyle("-fx-font-size: 11;");
+//        titleText.setStyle("-fx-font-size: 24;");
 
         // create description text
         descriptionText = new Text();
         descriptionText.setTextOrigin(VPos.TOP);
-//        descriptionText.setStyle("-fx-font-size: 11;");
+//        descriptionText.setStyle("-fx-font-size: 24;");
 
         // vertically lay out title and description
         labelVBox.getChildren().addAll(titleText, descriptionText);

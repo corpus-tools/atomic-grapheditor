@@ -5,27 +5,34 @@ package org.corpus_tools.atomic.grapheditor.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.grapheditor.constants.GEProcConstants;
-import org.corpus_tools.atomic.grapheditor.visuals.NodeVisual;
+import org.corpus_tools.atomic.grapheditor.model.visualization.AnnotationSet;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplayCoordinates;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplayLevel;
+import org.corpus_tools.atomic.grapheditor.model.visualization.LevelExtractor;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplaySpan;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
-import org.eclipse.swt.custom.BusyIndicator;
-import org.eclipse.swt.widgets.Display;
 
-import javafx.scene.Group;
-import javafx.scene.Scene;
 import javafx.scene.text.Text;
-import javafx.stage.Stage;
 
 /**
  * // TODO Add description
@@ -35,12 +42,18 @@ import javafx.stage.Stage;
  */
 public class Subgraph {
 
+	private static final double MARGIN_DEFAULT = 100d;
+
+	private static final double X_DEFAULT = 100d;
+
 	private static final Logger log = LogManager.getLogger(Subgraph.class);
 
 	private Set<SToken> tokens;
 	private Set<SSpan> spans;
 	private Set<SStructure> structures;
 	private SDocumentGraph graph;
+	private Map<SToken, DisplayCoordinates> tokenCoords = new HashMap<>();
+	private Map<SSpan, DisplayCoordinates> spanCoords = new HashMap<>();
 
 	/**
 	 * // TODO Add description
@@ -59,12 +72,13 @@ public class Subgraph {
 		this.graph = graph;
 
 		calculateTokenLayout(tokens);
-		calculateSpanLayout(spans);
+		if (spans != null && !spans.isEmpty()) {
+			calculateSpanLayout(spans, tokenCoords);
+		}
 	}
 
 	/**
-	 * // TODO Add description
-	 * FIXME Add annotations
+	 * // TODO Add description FIXME Add annotations
 	 * 
 	 * @param tokens
 	 */
@@ -72,11 +86,16 @@ public class Subgraph {
 		List<SToken> orderedTokens = graph.getSortedTokenByText(new ArrayList<>(tokens));
 		List<Double> widthsList = new ArrayList<>();
 		for (SToken t : orderedTokens) {
+			// Prepare the coords map entry for this token
 			// Pre-calculate widths to calculate x coords.
 			Set<Double> internalWidthsSet = new HashSet<>();
 			Set<Text> textSet = new HashSet<>();
-			textSet.add(new Text(graph.getText(t)));
-			textSet.add(new Text(t.getId().split("#")[1]));
+			Text textText = new Text(graph.getText(t));
+//			textText.setStyle("-fx-font-size: 24;");
+			textSet.add(textText);
+			Text idText = new Text(t.getId().split("#")[1]);
+//			idText.setStyle("-fx-font-size: 24;");
+			textSet.add(idText);
 			for (SAnnotation a : t.getAnnotations()) {
 				textSet.add(new Text(a.getQName() + ":" + a.getValue_STEXT()));
 			}
@@ -84,41 +103,64 @@ public class Subgraph {
 				text.applyCss();
 			}
 			for (Text text : textSet) {
-				internalWidthsSet.add(text.getLayoutBounds().getWidth());
-				
+				internalWidthsSet.add(text.getLayoutBounds().getWidth() + (GEProcConstants.HORIZONTAL_PADDING * 2));
+
 			}
 			double width = Collections.max(internalWidthsSet);
 			widthsList.add(width);
 			if (t.getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) == null) {
-				t.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH,
-						new Double(width));
+				t.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(width));
 			}
+			tokenCoords.put(t, new DisplayCoordinates(width));
 		}
 		List<Double> xList = new ArrayList<>();
 		// Hardcoded x coord of first token at 100d
-		xList.add(100d);
+		xList.add(X_DEFAULT);
 		SToken firstToken = orderedTokens.get(0);
 		if (firstToken.getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) == null) {
 			firstToken.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.X_COORDINATE,
-					new Double(100d));
+					new Double(X_DEFAULT));
+			tokenCoords.get(firstToken).setLeft(X_DEFAULT);
 		}
 		for (int i = 1; i < widthsList.size(); i++) {
 			Double predecessorWidth = widthsList.get(i - 1);
 			Double predecessorX = xList.get(i - 1);
 			// Hardcoded margin of 20d FIXME: Make user-settable
-			double newX = predecessorX + predecessorWidth + 20d;
+			double newX = predecessorX + predecessorWidth + MARGIN_DEFAULT;
 			xList.add(i, newX);
 			SToken tokenAtIndex = orderedTokens.get(i);
 			if (tokenAtIndex.getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) == null) {
 				tokenAtIndex.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.X_COORDINATE,
 						new Double(newX));
 			}
+			tokenCoords.get(tokenAtIndex).setLeft(newX);
 		}
 	}
 
-	private void calculateSpanLayout(Set<SSpan> spans) {
-		// TODO Auto-generated method stub
-	
+	private void calculateSpanLayout(Set<SSpan> spans, Map<SToken, DisplayCoordinates> tokenCoords) {
+		LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> levelsBySpanAnnotations = LevelExtractor
+				.computeSpanLevels(graph, spans, tokenCoords);
+		// Sort by number of spans per level
+		Comparator<Entry<AnnotationSet, ArrayList<DisplayLevel>>> byNumberOfSpan = (
+				Entry<AnnotationSet, ArrayList<DisplayLevel>> o1,
+				Entry<AnnotationSet, ArrayList<DisplayLevel>> o2) -> Integer.compare(o1.getValue().size(),
+						o2.getValue().size());
+		Map<AnnotationSet, ArrayList<DisplayLevel>> sortedLevels = levelsBySpanAnnotations.entrySet().stream().sorted(byNumberOfSpan.reversed()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		// Write processing annotations
+		int level = 1;
+		double yDefault = 100;
+		for (Entry<AnnotationSet, ArrayList<DisplayLevel>> entry : sortedLevels.entrySet()) {
+			for (DisplayLevel v : entry.getValue()) {
+				for (DisplaySpan ds : v.getDisplaySpans()) {
+					SSpan span = ds.getSpan();
+					span.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.X_COORDINATE, new Double(ds.getLeft()));
+					span.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(ds.getRight() - ds.getLeft()));
+					span.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.Y_COORDINATE, new Double(level * yDefault));
+				}
+				level++;
+			}
+		}
+		
 	}
 
 	/**
