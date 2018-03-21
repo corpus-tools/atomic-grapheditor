@@ -66,6 +66,9 @@ public class NodeVisual extends Region {
         descriptionText = new Text();
         descriptionText.setTextOrigin(VPos.TOP);
 //        descriptionText.setStyle("-fx-font-size: 11;");
+        
+        // TODO Create annotation texts
+//        for (annoText : annotationTexts)
 
         // vertically lay out title and description
         labelVBox.getChildren().addAll(titleText, descriptionText);
@@ -90,6 +93,7 @@ public class NodeVisual extends Region {
     @Override
     public double computeMinWidth(double height) {
         // ensure title is always visible
+    	// FIXME: Include annotation texts, calculate via Collections.max like in Subgraph#calculateLayoutTokens
     	double ttWidth = titleText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
     	double dtWidth = descriptionText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
     	return (dtWidth > ttWidth ? dtWidth : ttWidth);
