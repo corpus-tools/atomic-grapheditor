@@ -120,7 +120,6 @@ public class SegmentationView extends DocumentGraphEditor {
 			// TODO MessageDialog.openError
 			log.error("Could not initialize Graph Editor!", e1);
 		}
-
 		projectName = ((FileEditorInput) getEditorInput()).getFile().getProject().getName();
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLocation(168, 0);
@@ -307,47 +306,50 @@ public class SegmentationView extends DocumentGraphEditor {
 		btnAnnotate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				log.error("BUTTON {}", e);
 				IStructuredSelection selection = viewer.getStructuredSelection();
 
-				Job j = new Job("Building annotation graph for selected segments") {
+				// Job j = new Job("Building annotation graph for selected
+				// segments") {
+				//
+				// @Override
+				// protected IStatus run(IProgressMonitor monitor) {
+				List<MatchGroup> matchGroups = new ArrayList<>();
 
-					@Override
-					protected IStatus run(IProgressMonitor monitor) {
-						List<MatchGroup> matchGroups = new ArrayList<>();
-
-						@SuppressWarnings("rawtypes")
-						List selectionList = selection.toList();
-						int units = selectionList.size();
-						monitor.subTask("Building graph for nodes.");
-						monitor.beginTask("Searching for nodes linked to segments", units);
-						for (Object s : selectionList) {
-							if (s instanceof Segment) {
-								SNode n = ((Segment) s).getNode();
-								String nodeAQL = n.getId().replaceAll("salt:/", "");
-								MatchGroup matchGroup = null;
-								try {
-									matchGroup = search.findInProject("annis:node_name=\"" + nodeAQL + "\" _o_ node",
-											projectName);
-								}
-								catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
-									MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
-									return null;
-								}
-								matchGroups.add(matchGroup);
-								monitor.worked(1);
-							}
+				@SuppressWarnings("rawtypes")
+				List selectionList = selection.toList();
+				int units = selectionList.size();
+				// monitor.subTask("Building graph for nodes.");
+				// monitor.beginTask("Searching for nodes linked to segments",
+				// units);
+				for (Object s : selectionList) {
+					if (s instanceof Segment) {
+						SNode n = ((Segment) s).getNode();
+						String nodeAQL = n.getId().replaceAll("salt:/", "");
+						MatchGroup matchGroup = null;
+						try {
+							matchGroup = search.findInProject("annis:node_name=\"" + nodeAQL + "\" _o_ node",
+									projectName);
 						}
-						eventBroker.post(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
-
-						return Status.OK_STATUS;
+						catch (AnnisQLSyntaxException | AnnisQLSemanticsException ex) {
+							MessageDialog.openError(parent.getShell(), "Error parsing AQL", ex.getMessage());
+							// return null;
+						}
+						matchGroups.add(matchGroup);
+						// monitor.worked(1);
 					}
-				};
-				j.setUser(true);
-				j.setPriority(Job.LONG);
-				j.schedule();
+				}
+				eventBroker.send(GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED, matchGroups);
+
+				// return Status.OK_STATUS;
+				// }
+				// };
+				// j.setUser(true);
+				// j.setPriority(Job.LONG);
+				// j.schedule();
 				/*
-				 * Editor is already initialized, simply activate here.
-				 * It will wait until the job is run before updating its view.
+				 * Editor is already initialized, simply activate here. It will
+				 * wait until the job is run before updating its view.
 				 */
 				getSite().getPage().activate(graphEditorPart);
 			}

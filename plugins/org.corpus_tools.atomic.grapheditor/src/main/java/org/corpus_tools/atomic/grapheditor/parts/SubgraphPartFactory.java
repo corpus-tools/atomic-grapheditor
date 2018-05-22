@@ -42,10 +42,10 @@ public class SubgraphPartFactory implements IContentPartFactory {
     		return injector.getInstance(TokenPart.class);
     	}
     	else if (content instanceof SSpan) {
-    		return injector.getInstance(NodePart.class);
+    		return injector.getInstance(SpanPart.class);
     	}
     	else if (content instanceof SStructure) {
-    		return injector.getInstance(NodePart.class);
+    		return injector.getInstance(SpanPart.class);
     	}
     	else {
 			throw new IllegalArgumentException(content.getClass().toString());

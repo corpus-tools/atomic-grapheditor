@@ -3,8 +3,13 @@
  */
 package org.corpus_tools.atomic.grapheditor.visuals;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.corpus_tools.salt.core.SAnnotation;
 import org.eclipse.gef.fx.nodes.GeometryNode;
 import org.eclipse.gef.geometry.planar.RoundedRectangle;
 
@@ -12,7 +17,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.VPos;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -26,123 +30,136 @@ import javafx.scene.text.TextFlow;
  * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
  * 
  */
-public class TokenVisual extends NodeVisual {
-	
-private static final Logger log = LogManager.getLogger(NodeVisual.class);
-	
+public class TokenVisual extends Region {
+
+	private static final Logger log = LogManager.getLogger(NodeVisual.class);
+
 	/**
-	 * Must be the same value as org.corpus_tools.atomic.grapheditor.constants.GEProcConstants.HORIZONTAL_PADDING!
+	 * Must be the same value as
+	 * org.corpus_tools.atomic.grapheditor.constants.GEProcConstants.HORIZONTAL_PADDING!
 	 */
 	private static final double HORIZONTAL_PADDING = 5d;
-    private static final double VERTICAL_PADDING = 5d;
-    private static final double VERTICAL_SPACING = 5d;
+	private static final double VERTICAL_PADDING = 5d;
+	private static final double VERTICAL_SPACING = 5d;
 
-    private Text titleText;
-    private Text descriptionText;
-    private GeometryNode<RoundedRectangle> shape;
-    private VBox labelVBox;
+	private static final Double MIN_WIDTH = 100d;
 
-    public TokenVisual() {
-        // create background shape
-        shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
-        shape.setStroke(Color.BLACK);
+	private Text textText;
+	private Text tokenIdText;
+	private Text annotationsText;
+	private GeometryNode<RoundedRectangle> shape;
+	private VBox labelVBox;
 
-        // create vertical box for title and description
-        labelVBox = new VBox(VERTICAL_SPACING);
-        labelVBox.setPadding(new Insets(VERTICAL_PADDING, HORIZONTAL_PADDING, VERTICAL_PADDING, HORIZONTAL_PADDING));
+	private TextFlow annotationsFlow;
 
-        // ensure shape and labels are resized to fit this visual
-        shape.prefWidthProperty().bind(widthProperty());
-        shape.prefHeightProperty().bind(heightProperty());
-        labelVBox.prefWidthProperty().bind(widthProperty());
-        labelVBox.prefHeightProperty().bind(heightProperty());
+	public TokenVisual() {
+		shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
+		shape.setStroke(Color.BLACK);
 
-        // create title text
-        titleText = new Text();
-        titleText.setTextOrigin(VPos.TOP);
-        titleText.setTextAlignment(TextAlignment.CENTER);
-        titleText.setFill(Color.RED);
-        // TODO Make font sizes user-settable
-//        titleText.setStyle("-fx-font-size: 16;");
+		labelVBox = new VBox(VERTICAL_SPACING);
+		labelVBox.setPadding(new Insets(VERTICAL_PADDING, HORIZONTAL_PADDING, VERTICAL_PADDING, HORIZONTAL_PADDING));
 
-        // create description text
-        descriptionText = new Text();
-        descriptionText.setTextOrigin(VPos.TOP);
-//        descriptionText.setStyle("-fx-font-size: 24;");
+		shape.prefWidthProperty().bind(widthProperty());
+		shape.prefHeightProperty().bind(heightProperty());
+		labelVBox.prefWidthProperty().bind(widthProperty());
+		labelVBox.prefHeightProperty().bind(heightProperty());
 
-        // vertically lay out title and description
-        labelVBox.getChildren().addAll(titleText, descriptionText);
+		textText = new Text();
+		textText.setTextOrigin(VPos.TOP);
+		textText.setTextAlignment(TextAlignment.CENTER);
+		textText.setFill(Color.RED);
 
-        // ensure title is always visible (see also #computeMinWidth(double) and
-        // #computeMinHeight(double) methods)
-        setMinSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
+		tokenIdText = new Text();
+		tokenIdText.setTextOrigin(VPos.TOP);
 
-        // wrap shape and VBox in Groups so that their bounds-in-parent is
-        // considered when determining the layout-bounds of this visual
-        getChildren().addAll(new Group(shape), new Group(labelVBox));
-    }
+		annotationsText = new Text();
+		annotationsText.setTextOrigin(VPos.TOP);
+		annotationsFlow = new TextFlow(annotationsText);
+		annotationsFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
 
-    @Override
-    public double computeMinHeight(double width) {
-        // ensure title is always visible
-        // descriptionFlow.minHeight(width) +
-        // titleText.getLayoutBounds().getHeight() + VERTICAL_PADDING * 2;
-        return labelVBox.minHeight(width);
-    }
+		labelVBox.getChildren().addAll(textText, tokenIdText, annotationsFlow);
 
-    /* (non-Javadoc)
-     * @see org.corpus_tools.atomic.grapheditor.visuals.NodeVisual#computeMinWidth(double)
-     */
-    /**
-     * If you change something here, it must also be changed in the pre-calculation
-     * of token widths in Subgraph.calculateTokenLayout(Set<SToken>)!
-     */
-    @Override
-    public double computeMinWidth(double height) {
-        // ensure title is always visible
-    	double ttWidth = titleText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
-    	double dtWidth = descriptionText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2);
-    	double minWidth = dtWidth > ttWidth ? dtWidth : ttWidth; 
-    	return minWidth < 100d ? 100d : minWidth;
-    }
+		setMinSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
 
-    @Override
-    protected double computePrefHeight(double width) {
-        return minHeight(width);
-    }
+		getChildren().addAll(new Group(shape), new Group(labelVBox));
+	}
 
-    @Override
-    protected double computePrefWidth(double height) {
-        return minWidth(height);
-    }
+	@Override
+	public double computeMinHeight(double width) {
+		return labelVBox.minHeight(width);
+	}
 
-    @Override
-    public Orientation getContentBias() {
-        return Orientation.HORIZONTAL;
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.corpus_tools.atomic.grapheditor.visuals.NodeVisual#computeMinWidth(
+	 * double)
+	 */
+	/**
+	 * If you change something here, it must also be changed in the
+	 * pre-calculation of token widths in
+	 * Subgraph.calculateTokenLayout(Set<SToken>)!
+	 */
+	@Override
+	public double computeMinWidth(double height) {
+		List<Double> widths = new ArrayList<>();
+		widths.add(textText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2));
+		widths.add(tokenIdText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2));
+//		widths.add(annotationsText.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2));
+		widths.add(annotationsFlow.getLayoutBounds().getWidth() + (HORIZONTAL_PADDING * 2));
+		// double ttWidth = textText.getLayoutBounds().getWidth() +
+		// (HORIZONTAL_PADDING * 2);
+		// double dtWidth = tokenIdText.getLayoutBounds().getWidth() +
+		// (HORIZONTAL_PADDING * 2);
+		// double minWidth = dtWidth > ttWidth ? dtWidth : ttWidth;
+		// return minWidth < 100d ? 100d : minWidth;
+		Double max = widths.stream().max(Double::compare).get();
+		return max < MIN_WIDTH ? MIN_WIDTH : max;
+	}
 
-    public Text getDescriptionText() {
-        return descriptionText;
-    }
+	@Override
+	protected double computePrefHeight(double width) {
+		return minHeight(width);
+	}
 
-    public GeometryNode<?> getGeometryNode() {
-        return shape;
-    }
+	@Override
+	protected double computePrefWidth(double height) {
+		return minWidth(height);
+	}
 
-    public Text getTitleText() {
-        return titleText;
-    }
+	@Override
+	public Orientation getContentBias() {
+		return Orientation.HORIZONTAL;
+	}
 
-    public void setColor(Color color) {
-        shape.setFill(color);
-    }
+	public Text getDescriptionText() {
+		return tokenIdText;
+	}
 
-    public void setDescription(String description) {
-        this.descriptionText.setText(description);
-    }
+	public GeometryNode<?> getGeometryNode() {
+		return shape;
+	}
 
-    public void setTitle(String title) {
-        this.titleText.setText(title);
-    }
-	
+	public Text getTitleText() {
+		return textText;
+	}
+
+	public void setColor(Color color) {
+		shape.setFill(color);
+	}
+
+	public void setTokenId(String id) {
+		this.tokenIdText.setText(id);
+	}
+
+	public void setText(String text) {
+		this.textText.setText(text);
+	}
+
+	public void setAnnotations(Set<SAnnotation> annotations) {
+		this.annotationsText.setText(annotations.toString());
+
+	}
+
 }

@@ -21,4 +21,5 @@ public interface GEProcConstants {
 	final String WIDTH_QNAME = NAMESPACE + QNAME_SEPARATOR + WIDTH;
 	final double HORIZONTAL_PADDING = 5d;
 	final double MIN_TOKEN_WIDTH = 100d;
+	final double MIN_TOKEN_HEIGHT = 20d;
 }

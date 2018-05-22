@@ -3,13 +3,29 @@
  */
 package org.corpus_tools.atomic.grapheditor.parts;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.corpus_tools.atomic.grapheditor.constants.GEProcConstants;
+import org.corpus_tools.atomic.grapheditor.model.Subgraph;
+import org.corpus_tools.atomic.grapheditor.model.visualization.AnnotationSet;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplayCoordinates;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplayLevel;
+import org.corpus_tools.atomic.grapheditor.model.visualization.DisplaySpan;
+import org.corpus_tools.atomic.grapheditor.model.visualization.LevelExtractor;
 import org.corpus_tools.atomic.grapheditor.visuals.NodeVisual;
+import org.corpus_tools.atomic.util.AnnotationUtil;
 import org.corpus_tools.salt.common.SDocumentGraph;
+import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SToken;
 import org.corpus_tools.salt.core.SNode;
 import org.eclipse.gef.geometry.planar.Rectangle;
@@ -27,7 +43,9 @@ import javafx.scene.paint.Color;
  * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
  * 
  */
-public class NodePart extends AbstractContentPart<NodeVisual> {
+public class SpanPart extends AbstractContentPart<NodeVisual> {
+	
+	private static final Logger log = LogManager.getLogger(SpanPart.class);
 
 	@Override
     protected NodeVisual doCreateVisual() {
@@ -80,7 +98,8 @@ public class NodePart extends AbstractContentPart<NodeVisual> {
         visual.setTranslateY(rec.getY());
     }
 
-    @Override
+
+	@Override
     public SNode getContent() {
         return (SNode) super.getContent();
     }

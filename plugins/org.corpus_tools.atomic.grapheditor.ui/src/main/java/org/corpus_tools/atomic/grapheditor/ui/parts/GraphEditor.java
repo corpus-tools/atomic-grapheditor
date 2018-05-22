@@ -3,7 +3,8 @@
  */
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import java.util.ArrayList; 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.corpus_tools.salt.common.impl.SStructureImpl;
 import org.corpus_tools.salt.common.impl.STokenImpl;
 import org.corpus_tools.salt.core.SNode;
 import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.PlatformUI;
 import org.osgi.service.event.Event;
@@ -76,6 +78,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 	@SuppressWarnings("unchecked")
 	@Override
 	public void handleEvent(Event event) {
+		log.error("\n" + event.hashCode());
 		Object data = event.getProperty(EVENT_DATA);
 		switch (event.getTopic()) {
 		case GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED:
@@ -90,6 +93,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 						log.error("Event data is not the expected List<MatchGroup>. This shouldn't have happened.", e);
 						break;
 					}
+					// If the matched data is different, (re-)build the subgraph
 					Subgraph subgraph = buildSubgraph(matchGroups);
 					getContentViewer().getContents()
 							.setAll(Collections.singletonList(subgraph));
@@ -135,6 +139,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 	}
 
 	private Subgraph buildSubgraph(List<MatchGroup> data) {
+		log.trace("Building subgroups");
 		Set<java.net.URI> deduplicatedSaltIDs = new HashSet<>();
 		for (MatchGroup matchGroup : data) {
 			for (Match match : matchGroup.getMatches()) {
@@ -151,19 +156,18 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 				subgraphTokens.add((SToken) node);
 			}
 			else if (clazz == SSpanImpl.class) {
+				log.error("\nSPAN! {}", node);
 				subgraphSpans.add(((SSpan) node));
 			}
 			else if (clazz == SStructureImpl.class) {
 				subgraphStructures.add((SStructure) node);
 			}
 		}
+		log.error("\nSPANS {}", subgraphSpans);
 		Subgraph subgraph = new Subgraph(graph, subgraphTokens, subgraphSpans, subgraphStructures);
+		log.error("\nSG: {}", subgraph);
+		subgraph.calculateLayout();
 		return subgraph;
 	}
-
-	@Override
-	public void setFocus() {
-		super.setFocus();
-	}
-
+	
 }

@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
+import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 
 /**
@@ -21,7 +25,7 @@ import org.corpus_tools.salt.common.SToken;
  */
 public class LevelExtractor {
 
-
+	private static final Logger log = LogManager.getLogger(LevelExtractor.class);
 	/**
 	 * // TODO Add description
 	 * 
@@ -30,24 +34,20 @@ public class LevelExtractor {
 	 * @param tokenCoords
 	 * @return
 	 */
-	public static LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> computeSpanLevels(SDocumentGraph graph,
+	public LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> computeSpanLevels(SDocumentGraph graph,
 			Set<SSpan> spans, Map<SToken, DisplayCoordinates> tokenCoords) {
-
 		LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> levelsByAnnotation = new LinkedHashMap<>();
 		// Create a new list of levels for each set of qualified annotation names
 		for (SSpan span : spans) {
 			levelsByAnnotation.put(new AnnotationSet(span.getAnnotations()), new ArrayList<DisplayLevel>());
 		}
-
 		for (SSpan span : spans) {
 			List<SToken> tokens = graph.getOverlappedTokens(span);
 			List<SToken> sortedTokens = graph.getSortedTokenByText(tokens);
+			// FIXME FIXME FIXME WE ALWAYS ARRIVE HERE!!!, So this must be broken:
 			addAnnotationsForSpan(span, tokenCoords, sortedTokens, levelsByAnnotation);
 		}
-		
-		
-		
-		
+		// FIXME FIXME FIXME WE NEVER ARRIVE HERE!!!
 		
 			// Get the left-most and right-most coordinates for each span
 //			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
@@ -59,32 +59,63 @@ public class LevelExtractor {
 		for (Map.Entry<AnnotationSet, ArrayList<DisplayLevel>> e : levelsByAnnotation.entrySet()) {
 			mergeAllRowsIfPossible(e.getValue());
 		}
-
 		return levelsByAnnotation;
 	}
 
-	private static void addAnnotationsForSpan(SSpan span, Map<SToken, DisplayCoordinates> tokenCoords, List<SToken> sortedTokens, LinkedHashMap<AnnotationSet,ArrayList<DisplayLevel>> levelsByAnnotation) {
+//	/**
+//	 * // TODO Add description
+//	 * 
+//	 * @param graph
+//	 * @param structures
+//	 * @param tokenCoords
+//	 * @return
+//	 */
+//	public static LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> computeStructureLevels(SDocumentGraph graph,
+//			Set<SStructure> structures, Map<SToken, DisplayCoordinates> tokenCoords) {
+//
+//		for (SStructure structure : structures) {
+////			List<SToken> tokens = graph.getOverlappedTokens(structure);
+////			List<SToken> sortedTokens = graph.getSortedTokenByText(tokens);
+////			addAnnotationsForStructure(structure, tokenCoords, sortedTokens, levelsByAnnotation);
+//		}
+//		
+//			// Get the left-most and right-most coordinates for each span
+////			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
+////			double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+//
+////		}
+//
+////		// Merge rows
+////		for (Map.Entry<AnnotationSet, ArrayList<DisplayLevel>> e : levelsByAnnotation.entrySet()) {
+////			mergeAllRowsIfPossible(e.getValue());
+////		}
+//
+////		return levelsByAnnotation;
+//	}
+
+	private void addAnnotationsForSpan(SSpan span, Map<SToken, DisplayCoordinates> tokenCoords, List<SToken> sortedTokens, LinkedHashMap<AnnotationSet,ArrayList<DisplayLevel>> levelsByAnnotation) {
 		double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
 		double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
 		DisplaySpan displaySpan = new DisplaySpan(span, left, right);
-		// FIXME: Don't calculate for all annotations, calculate for set of annotations!
+		// FIXME: Don't calculate for all annotations, calculate for set of
+		// annotations!
 		AnnotationSet annoSet = new AnnotationSet(span.getAnnotations());
 		ArrayList<DisplayLevel> levels = levelsByAnnotation.get(annoSet);
-			if (levels != null) {
-				// only do something if the annotation was defined before
-				
-				// 1. give each set of annotations of each span an own row
-				DisplayLevel level = new DisplayLevel();
-				
-				for (SToken t : sortedTokens) {
-					displaySpan.getCoveredIDs().add(t.getId());
-				}
-				level.addDisplaySpan(displaySpan);
-				levels.add(level);
+		if (levels != null) {
+			// only do something if the annotation was defined before
+
+			// 1. give each set of annotations of each span an own row
+			DisplayLevel level = new DisplayLevel();
+
+			for (SToken t : sortedTokens) {
+				displaySpan.getCoveredIDs().add(t.getId());
 			}
+			level.addDisplaySpan(displaySpan);
+			levels.add(level);
+		}
 	}
 
-	private static void mergeAllRowsIfPossible(ArrayList<DisplayLevel> levels) {
+	private void mergeAllRowsIfPossible(ArrayList<DisplayLevel> levels) {
 		/*
 		 * Use fixed seed in order to get consistent results (with random
 		 * properties)
