@@ -161,8 +161,8 @@ public class Subgraph {
 		if (firstToken.getProcessingAnnotation(GEProcConstants.XCOORD_QNAME) == null) {
 			firstToken.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.X_COORDINATE,
 					new Double(X_DEFAULT));
-			tokenCoords.get(firstToken).setLeft(X_DEFAULT);
 		}
+		tokenCoords.get(firstToken).setLeft(X_DEFAULT);
 		for (int i = 1; i < widthsList.size(); i++) {
 			Double predecessorWidth = widthsList.get(i - 1);
 			Double predecessorX = xList.get(i - 1);

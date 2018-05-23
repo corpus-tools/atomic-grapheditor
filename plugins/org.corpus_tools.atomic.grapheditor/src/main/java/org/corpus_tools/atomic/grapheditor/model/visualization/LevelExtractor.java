@@ -15,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
-import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
 
 /**
