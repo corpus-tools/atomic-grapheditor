@@ -17,6 +17,7 @@ import org.corpus_tools.atomic.grapheditor.model.InfoNode;
 import org.corpus_tools.atomic.grapheditor.model.Subgraph;
 import org.corpus_tools.atomic.grapheditor.ui.constants.GraphEditorEventConstants;
 import org.corpus_tools.salt.common.SDocumentGraph;
+import org.corpus_tools.salt.common.SDominanceRelation;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
@@ -24,6 +25,7 @@ import org.corpus_tools.salt.common.impl.SSpanImpl;
 import org.corpus_tools.salt.common.impl.SStructureImpl;
 import org.corpus_tools.salt.common.impl.STokenImpl;
 import org.corpus_tools.salt.core.SNode;
+import org.corpus_tools.salt.core.SRelation;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
@@ -148,6 +150,7 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 		Set<SToken> subgraphTokens = new HashSet<>();
 		Set<SSpan> subgraphSpans = new HashSet<>();
 		Set<SStructure> subgraphStructures = new HashSet<>();
+		Set<SDominanceRelation> subgraphDominanceRelations = new HashSet<>();
 		for (java.net.URI id : deduplicatedSaltIDs) {
 			SNode node = graph.getNode(id.toString());
 			Class<? extends SNode> clazz = node.getClass();
@@ -161,7 +164,17 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 				subgraphStructures.add((SStructure) node);
 			}
 		}
-		Subgraph subgraph = new Subgraph(graph, subgraphTokens, subgraphSpans, subgraphStructures);
+		for (SStructure structure : subgraphStructures) {
+			for (SRelation outRel : structure.getOutRelations()) {
+				if (outRel instanceof SDominanceRelation) {
+					if (subgraphStructures.contains(outRel.getTarget())
+							|| subgraphTokens.contains(outRel.getTarget())) {
+						subgraphDominanceRelations.add((SDominanceRelation) outRel);
+					}
+				}
+			}
+		}
+		Subgraph subgraph = new Subgraph(graph, subgraphTokens, subgraphSpans, subgraphStructures, subgraphDominanceRelations);
 		subgraph.calculateLayout();
 		return subgraph;
 	}

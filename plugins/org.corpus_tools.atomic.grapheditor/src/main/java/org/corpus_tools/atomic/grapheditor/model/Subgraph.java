@@ -4,6 +4,7 @@
 package org.corpus_tools.atomic.grapheditor.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,10 +31,14 @@ import org.corpus_tools.salt.common.SDominanceRelation;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
+import org.corpus_tools.salt.core.SAnnotationContainer;
 import org.corpus_tools.salt.core.SNode;
 import org.corpus_tools.salt.core.SRelation;
 import org.eclipse.gef.fx.nodes.GeometryNode;
 import org.eclipse.gef.geometry.planar.RoundedRectangle;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -69,6 +74,8 @@ public class Subgraph {
 
 	private LevelExtractor levelExtractor;
 
+	private Set<SDominanceRelation> dominanceRelations;
+
 	/**
 	 * // TODO Add description
 	 * 
@@ -77,25 +84,32 @@ public class Subgraph {
 	 * @param subgraphTokens
 	 * @param subgraphSpans
 	 * @param subgraphStructures
+	 * @param subgraphDominanceRelations 
 	 * @param data 
 	 */
 	public Subgraph(SDocumentGraph graph, Set<SToken> subgraphTokens, Set<SSpan> subgraphSpans,
-			Set<SStructure> subgraphStructures) {
+			Set<SStructure> subgraphStructures, Set<SDominanceRelation> subgraphDominanceRelations) {
 		this.tokens = subgraphTokens;
 		this.spans = subgraphSpans;
 		this.structures = subgraphStructures;
+		this.dominanceRelations = subgraphDominanceRelations;
 		this.graph = graph;
 		this.levelExtractor = new LevelExtractor(tokens);
 	}
 	
+	/**
+	 * // TODO Add description
+	 * 
+	 * @return
+	 */
 	public boolean calculateLayout() {
 		this.tokenCoords = calculateTokenLayout(tokens);
 		if (spans != null && !spans.isEmpty()) {
 			calculateSpanLayout(spans, tokenCoords);
 		}
-//		if (structures != null && !structures.isEmpty()) {
-//			calculateStructureLayout(structures, tokenCoords);
-//		}
+		if (structures != null && !structures.isEmpty()) {
+			calculateStructureLayout(structures, tokenCoords);
+		}
 		return true;
 	}
 
@@ -130,8 +144,6 @@ public class Subgraph {
 	        TextFlow annotationsFlow = new TextFlow(annotationsText);
 			annotationsFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
 	        textSet.add(annotationsFlow);
-	        
-	        
 	        
 	        for (Node text : textSet) {
 	        	text.applyCss();
@@ -204,42 +216,89 @@ public class Subgraph {
 		
 	}
 
-	private void calculateStructureLayout(Set<SStructure> structures2, Map<SToken, DisplayCoordinates> tokenCoords2) {
-//		LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> levelsByStructureAnnotations = LevelExtractor
-//				.computeStructureLevels(graph, structures, tokenCoords);
-		List<SStructure> firstParentStructures = new ArrayList<>();
-		Queue<SStructure> queue = new LinkedList<>(structures2);
-		// Find "first parents", i.e., SStructures that only have STokens as children
-		while (!queue.isEmpty()) {
-			SStructure s = queue.remove();
-			if (isFirstParent(s)) {
-				firstParentStructures.add(s);
-			}
-			else {
-				// Structure is not a "first parent", so add it to the queue again
-//				queue.add(s);
+	private void calculateStructureLayout(Set<SStructure> structures2, Map<SToken, DisplayCoordinates> tokenCoords) {
+		Map<SStructure, Integer> levelsByDistanceToToken = levelExtractor.computeStructureLevels(graph, structures, tokenCoords);
+		/*
+		 * Compress list of levels so that they are incrementing by 1
+		 */
+		Multimap<Integer, SStructure> multiMap = HashMultimap.create();
+		for (Entry<SStructure, Integer> entry : levelsByDistanceToToken.entrySet()) {
+			multiMap.put(entry.getValue(), entry.getKey());
+		}
+		List<Integer> uniques = levelsByDistanceToToken.values().stream().distinct().sorted().collect(Collectors.toList()); 
+		Map<SStructure, Integer> levelsMap = new HashMap<>();
+		for (int i = 0; i < uniques.size(); i++) {
+			for (SStructure structure : multiMap.get(uniques.get(i))) {
+				levelsMap.put(structure, i+1);
 			}
 		}
-		for (SStructure s : firstParentStructures) {
-			for (SRelation rel : s.getOutRelations()) {
-				if (rel instanceof SDominanceRelation) {
-					if (rel.getTarget() instanceof SToken) {
-						continue;
-					}
-				}
+		for (Entry<SStructure, Integer> entry : levelsMap.entrySet()) {
+			SStructure structure = entry.getKey();
+			Integer level = entry.getValue();
+			// Prepare the coords map entry for this structure
+			// Pre-calculate widths to calculate x coords.
+			// Pre-render off-screen
+			Group offScreenRoot = new Group();
+			GeometryNode<RoundedRectangle> shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
+				        
+			Set<Double> internalWidthsSet = new HashSet<>();
+			Set<Double> internalHeightsSet = new HashSet<>();
+			Set<Node> textSet = new HashSet<>();
+
+			Text idText = new Text(structure.getId().split("#")[1]);
+			textSet.add(idText);
+
+			Text annotationsText = new Text(structure.getAnnotations().toString());
+			TextFlow annotationsFlow = new TextFlow(annotationsText);
+			annotationsFlow.maxWidthProperty().bind(shape.widthProperty().subtract(HORIZONTAL_PADDING * 2));
+			textSet.add(annotationsFlow);
+
+			for (Node text : textSet) {
+				text.applyCss();
+				offScreenRoot.getChildren().add(text);
 			}
+			for (Node text : textSet) {
+				internalWidthsSet.add(text.getLayoutBounds().getWidth() + (GEProcConstants.HORIZONTAL_PADDING * 2));
+				internalHeightsSet.add(text.getLayoutBounds().getHeight() + (GEProcConstants.HORIZONTAL_PADDING * 2));
+			}
+			double width = Collections.max(internalWidthsSet);
+			double height = Collections.max(internalWidthsSet);
+			width = width < GEProcConstants.MIN_TOKEN_WIDTH ? GEProcConstants.MIN_TOKEN_WIDTH : width;
+			height = height < GEProcConstants.MIN_TOKEN_HEIGHT ? GEProcConstants.MIN_TOKEN_HEIGHT : height;
+			if (structure.getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) == null) {
+				structure.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(width));
+			}
+			AnnotationUtil.annotateProcessing(entry.getKey(), GEProcConstants.NAMESPACE, GEProcConstants.Y_COORDINATE,
+					// FIXME 100d hardcoded
+					new Double(-(level * 100d) - Y_MARGIN_DEFAULT));
+			// Calculate X
+			List<SToken> overlappedTokens = graph.getOverlappedTokens(structure);
+			overlappedTokens.retainAll(tokenCoords.keySet());
+			List<SToken> sortedTokens = graph.getSortedTokenByText(overlappedTokens);
+			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
+			double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+			double x = -1d;
+			if (sortedTokens.size() > 1) {
+				x = computePosition(left, right, width);
+			}
+			else {
+				x = left;
+			}
+			AnnotationUtil.annotateProcessing(structure, GEProcConstants.NAMESPACE, GEProcConstants.X_COORDINATE, x);
 		}
 	}
 
-	private boolean isFirstParent(SStructure s) {
-		for (SRelation rel : s.getOutRelations()) {
-			if (rel instanceof SDominanceRelation) {
-				if (!(rel.getTarget() instanceof SToken)) {
-					return false;
-				}
-			}
-		}
-		return true;
+
+	private double computePosition(double left, double right, double width) {
+		int intLeft = (int) left;
+		int intRight = (int) right;
+		int intWidth = (int) width;
+		int distance = intRight - intLeft;
+		int halfDistance = distance / 2;
+		int halfWidth = intWidth / 2;
+		int midpoint = intRight - halfDistance;
+		int x = midpoint - halfWidth;
+		return new Double(x);
 	}
 
 	/**
@@ -262,6 +321,10 @@ public class Subgraph {
 	public final Set<SStructure> getStructures() {
 		return structures;
 	}
+	
+	public final Set<SDominanceRelation> getDominanceRelations() {
+		return dominanceRelations;
+	}
 
 	/**
 	 * // TODO Add description
@@ -274,6 +337,13 @@ public class Subgraph {
 		nodeList.addAll(spans);
 		nodeList.addAll(structures);
 		return nodeList;
+	}
+	
+	public List<SAnnotationContainer> getContent() {
+		List<SAnnotationContainer> content = new ArrayList<>();
+		content.addAll(getNodes());
+		content.addAll(getDominanceRelations());
+		return content;
 	}
 
 	/**

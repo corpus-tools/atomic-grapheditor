@@ -3,7 +3,7 @@
  */
 package org.corpus_tools.atomic.grapheditor.parts;
 
-import java.util.Collections; 
+import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,13 +18,14 @@ import javafx.scene.paint.Color;
  * @author Stephan Druskat <[mail@sdruskat.net](mailto:mail@sdruskat.net)>
  * 
  */
-public class SpanPart extends StructuredNodePart {
+public class StructurePart extends StructuredNodePart {
 	
-	public SpanPart() {
-		super(Color.LIGHTGREY, Color.DARKBLUE);
+	public StructurePart() {
+		super(Color.MINTCREAM, Color.PURPLE);
 	}
-	
-	private static final Logger log = LogManager.getLogger(SpanPart.class);
+
+
+	private static final Logger log = LogManager.getLogger(StructurePart.class);
 
     @Override
     protected SetMultimap<? extends Object, String> doGetContentAnchorages() {

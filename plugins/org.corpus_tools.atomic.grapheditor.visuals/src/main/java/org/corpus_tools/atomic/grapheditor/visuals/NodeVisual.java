@@ -41,7 +41,7 @@ public class NodeVisual extends Region {
 
 	private TextFlow descriptionFlow;
 
-    public NodeVisual() {
+    public NodeVisual(Color titleTextColour) {
         // create background shape
         shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
         shape.setStroke(Color.BLACK);
@@ -60,7 +60,7 @@ public class NodeVisual extends Region {
         titleText = new Text();
         titleText.setTextOrigin(VPos.TOP);
         titleText.setTextAlignment(TextAlignment.CENTER);
-        titleText.setFill(Color.BURLYWOOD);
+        titleText.setFill(titleTextColour);
         // TODO Make font sizes user-settable
 //        titleText.setStyle("-fx-font-size: 11;");
 

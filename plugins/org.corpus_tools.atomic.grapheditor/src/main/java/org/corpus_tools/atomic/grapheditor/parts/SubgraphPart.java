@@ -35,7 +35,8 @@ public class SubgraphPart extends AbstractContentPart<Group> {
 
 	@Override
 	protected List<? extends Object> doGetContentChildren() {
-		return getContent().getNodes();
+		// Subgraph.getContent() returns nodes *and* relations
+		return getContent().getContent();
 	}
 
 	@Override

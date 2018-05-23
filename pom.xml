@@ -99,5 +99,8 @@
   		plugins/org.corpus_tools.atomic.grapheditor.visuals
   	</module>
   	<module>feature/org.corpus_tools.atomic.grapheditor.feature</module>
+  	
+  	
+  	<module>tests/org.corpus_tools.atomic.grapheditor.tests</module>
 	</modules>
 </project>

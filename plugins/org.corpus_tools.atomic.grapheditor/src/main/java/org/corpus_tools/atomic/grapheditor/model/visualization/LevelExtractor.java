@@ -4,6 +4,8 @@
 package org.corpus_tools.atomic.grapheditor.model.visualization;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +17,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.corpus_tools.salt.common.SDocumentGraph;
 import org.corpus_tools.salt.common.SSpan;
+import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
+import org.corpus_tools.salt.core.SGraph.GRAPH_TRAVERSE_TYPE;
+import org.corpus_tools.salt.core.SNode;
 
 /**
  * // TODO Add description
@@ -72,6 +77,44 @@ public class LevelExtractor {
 			mergeAllRowsIfPossible(e.getValue());
 		}
 		return levelsByAnnotation;
+	}
+	
+	/**
+	 * Computes the vertical "level" for structures, i.e., the maximum
+	 * number of steps it would take in a depth-first traversal taking
+	 * a structure as source to arrive at a token.
+	 * 
+	 * @param graph
+	 * @param structures
+	 * @param tokenCoords
+	 * @return
+	 */
+	public Map<SStructure, Integer> computeStructureLevels(SDocumentGraph graph,
+			Set<SStructure> structures, Map<SToken, DisplayCoordinates> tokenCoords) {
+		Map<SStructure, Integer> levelsByDistanceFromToken = new HashMap<>();
+		for (SStructure structure : structures) {
+			int levelByDistanceFromTokens = -1;
+			// Traverse graph from node until we hit a token
+			LongestDistanceTraverser traverseHandler = new LongestDistanceTraverser();
+			graph.traverse(Arrays.asList(new SNode[] {structure}), GRAPH_TRAVERSE_TYPE.TOP_DOWN_DEPTH_FIRST, "TDDF", traverseHandler);
+			levelsByDistanceFromToken.put(structure, traverseHandler.getDistance());
+		}
+//		for (SStructure structure : structures) {
+//			// Use only the tokens that are also in the text!
+//			List<SToken> tokens = graph.getOverlappedTokens(structure);
+//			boolean retainTokens = tokens.retainAll(subgraphTokens);
+//			log.trace("List of tokens to calculate coordinates for is not full list of spanned tokens for span {}: {}.", structure.getIdentifier(), retainTokens);
+//			List<SToken> sortedTokens = graph.getSortedTokenByText(tokens);
+//			addAnnotationsForSpan(structure, tokenCoords, sortedTokens, levelByDistanceFromTokens);
+//		}
+		
+			// Get the left-most and right-most coordinates for each span
+//			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
+//			double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+
+//		}
+
+		return levelsByDistanceFromToken;
 	}
 
 //	/**
