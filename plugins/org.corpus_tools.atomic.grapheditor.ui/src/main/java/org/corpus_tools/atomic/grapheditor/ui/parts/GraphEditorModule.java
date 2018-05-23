@@ -3,7 +3,8 @@
  */
 package org.corpus_tools.atomic.grapheditor.ui.parts;
 
-import org.corpus_tools.atomic.grapheditor.SubgraphAnchorProvider; 
+import org.corpus_tools.atomic.grapheditor.SubgraphAnchorProvider;
+import org.corpus_tools.atomic.grapheditor.parts.AbstractRelationPart;
 import org.corpus_tools.atomic.grapheditor.parts.StructuredNodePart;
 import org.corpus_tools.atomic.grapheditor.parts.SubgraphPartFactory;
 import org.corpus_tools.atomic.grapheditor.parts.TokenPart;
@@ -68,6 +69,7 @@ public class GraphEditorModule extends MvcFxModule {
         super.configure();
         bindSubgraphNodePartAdapters(AdapterMaps.getAdapterMapBinder(binder(), StructuredNodePart.class));
         bindSubgraphNodePartAdapters(AdapterMaps.getAdapterMapBinder(binder(), TokenPart.class));
+        bindSubgraphNodePartAdapters(AdapterMaps.getAdapterMapBinder(binder(), AbstractRelationPart.class));
     }
     
     /* (non-Javadoc)
