@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -26,6 +27,17 @@ import org.corpus_tools.salt.common.SToken;
 public class LevelExtractor {
 
 	private static final Logger log = LogManager.getLogger(LevelExtractor.class);
+	private Set<SToken> subgraphTokens;
+	
+	/**
+	 * // TODO Add description
+	 * 
+	 * @param tokens
+	 */
+	public LevelExtractor(Set<SToken> tokens) {
+		this.subgraphTokens = tokens;
+	}
+
 	/**
 	 * // TODO Add description
 	 * 
@@ -42,12 +54,13 @@ public class LevelExtractor {
 			levelsByAnnotation.put(new AnnotationSet(span.getAnnotations()), new ArrayList<DisplayLevel>());
 		}
 		for (SSpan span : spans) {
+			// Use only the tokens that are also in the text!
 			List<SToken> tokens = graph.getOverlappedTokens(span);
+			boolean retainTokens = tokens.retainAll(subgraphTokens);
+			log.trace("List of tokens to calculate coordinates for is not full list of spanned tokens for span {}: {}.", span.getIdentifier(), retainTokens);
 			List<SToken> sortedTokens = graph.getSortedTokenByText(tokens);
-			// FIXME FIXME FIXME WE ALWAYS ARRIVE HERE!!!, So this must be broken:
 			addAnnotationsForSpan(span, tokenCoords, sortedTokens, levelsByAnnotation);
 		}
-		// FIXME FIXME FIXME WE NEVER ARRIVE HERE!!!
 		
 			// Get the left-most and right-most coordinates for each span
 //			double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
@@ -94,8 +107,14 @@ public class LevelExtractor {
 //	}
 
 	private void addAnnotationsForSpan(SSpan span, Map<SToken, DisplayCoordinates> tokenCoords, List<SToken> sortedTokens, LinkedHashMap<AnnotationSet,ArrayList<DisplayLevel>> levelsByAnnotation) {
-		double left = tokenCoords.get(sortedTokens.get(0)).getLeft();
-		double right = tokenCoords.get(sortedTokens.get(sortedTokens.size() - 1)).getRight();
+		for (Entry<SToken, DisplayCoordinates> entry : tokenCoords.entrySet()) {
+		}
+		SToken firstToken = sortedTokens.get(0);
+		SToken lastToken = sortedTokens.get(sortedTokens.size() - 1);
+		DisplayCoordinates firstCoords = tokenCoords.get(firstToken);
+		DisplayCoordinates lastCoords = tokenCoords.get(lastToken);
+		double left = firstCoords.getLeft();
+		double right = lastCoords.getRight();
 		DisplaySpan displaySpan = new DisplaySpan(span, left, right);
 		// FIXME: Don't calculate for all annotations, calculate for set of
 		// annotations!

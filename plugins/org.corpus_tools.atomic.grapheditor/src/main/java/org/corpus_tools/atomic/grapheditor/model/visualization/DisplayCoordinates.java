@@ -69,5 +69,10 @@ public class DisplayCoordinates {
 	public final double getWidth() {
 		return width;
 	}
+	
+	@Override
+	public String toString() {
+		return "(L=" + getLeft() + ",R=" + getRight() + "W=" + getWidth() + ")";
+	}
 
 }

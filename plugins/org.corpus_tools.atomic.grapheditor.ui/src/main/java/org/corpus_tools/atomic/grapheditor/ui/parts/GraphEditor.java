@@ -78,7 +78,6 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 	@SuppressWarnings("unchecked")
 	@Override
 	public void handleEvent(Event event) {
-		log.error("\n" + event.hashCode());
 		Object data = event.getProperty(EVENT_DATA);
 		switch (event.getTopic()) {
 		case GraphEditorEventConstants.TOPIC_SUBGRAPH_CHANGED:
@@ -156,16 +155,13 @@ public class GraphEditor extends GraphicalDocumentGraphEditor implements EventHa
 				subgraphTokens.add((SToken) node);
 			}
 			else if (clazz == SSpanImpl.class) {
-				log.error("\nSPAN! {}", node);
 				subgraphSpans.add(((SSpan) node));
 			}
 			else if (clazz == SStructureImpl.class) {
 				subgraphStructures.add((SStructure) node);
 			}
 		}
-		log.error("\nSPANS {}", subgraphSpans);
 		Subgraph subgraph = new Subgraph(graph, subgraphTokens, subgraphSpans, subgraphStructures);
-		log.error("\nSG: {}", subgraph);
 		subgraph.calculateLayout();
 		return subgraph;
 	}

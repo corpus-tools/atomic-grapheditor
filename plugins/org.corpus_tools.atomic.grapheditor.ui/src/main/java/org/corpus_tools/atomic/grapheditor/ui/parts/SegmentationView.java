@@ -306,7 +306,6 @@ public class SegmentationView extends DocumentGraphEditor {
 		btnAnnotate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				log.error("BUTTON {}", e);
 				IStructuredSelection selection = viewer.getStructuredSelection();
 
 				// Job j = new Job("Building annotation graph for selected

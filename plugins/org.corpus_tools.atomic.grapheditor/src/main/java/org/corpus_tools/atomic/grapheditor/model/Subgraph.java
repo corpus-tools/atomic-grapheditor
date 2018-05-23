@@ -30,18 +30,14 @@ import org.corpus_tools.salt.common.SDominanceRelation;
 import org.corpus_tools.salt.common.SSpan;
 import org.corpus_tools.salt.common.SStructure;
 import org.corpus_tools.salt.common.SToken;
-import org.corpus_tools.salt.core.SAnnotation;
 import org.corpus_tools.salt.core.SNode;
 import org.corpus_tools.salt.core.SRelation;
 import org.eclipse.gef.fx.nodes.GeometryNode;
 import org.eclipse.gef.geometry.planar.RoundedRectangle;
 
-import annis.service.objects.MatchGroup;
 import javafx.scene.Group;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextBuilder;
 import javafx.scene.text.TextFlow;
 
 /**
@@ -89,13 +85,11 @@ public class Subgraph {
 		this.spans = subgraphSpans;
 		this.structures = subgraphStructures;
 		this.graph = graph;
-		this.levelExtractor = new LevelExtractor();
-		log.error("\n\nSUBGRAPH\\n\n");
+		this.levelExtractor = new LevelExtractor(tokens);
 	}
 	
 	public boolean calculateLayout() {
 		this.tokenCoords = calculateTokenLayout(tokens);
-		// STALLS HERE:
 		if (spans != null && !spans.isEmpty()) {
 			calculateSpanLayout(spans, tokenCoords);
 		}
@@ -104,10 +98,6 @@ public class Subgraph {
 //		}
 		return true;
 	}
-
-//	public Subgraph() {
-//		// An empty Subgraph
-//	}
 
 	/**
 	 * // TODO Add description FIXME Add annotations
@@ -124,11 +114,8 @@ public class Subgraph {
 			// Pre-calculate widths to calculate x coords.
 			// Pre-render off-screen
 			Group offScreenRoot = new Group();
-	        Scene offScreen = new Scene(offScreenRoot, 1024, 768);
+	        GeometryNode<RoundedRectangle> shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
 	        
-	        GeometryNode shape = new GeometryNode<>(new RoundedRectangle(0, 0, 70, 30, 8, 8));
-	        
-//	        offScreenRoot.getChildren().addAll(untransformed, line1, line2);
 	        Set<Double> internalWidthsSet = new HashSet<>();
 	        Set<Double> internalHeightsSet = new HashSet<>();
 	        Set<Node> textSet = new HashSet<>();
@@ -163,7 +150,8 @@ public class Subgraph {
 			if (t.getProcessingAnnotation(GEProcConstants.WIDTH_QNAME) == null) {
 				t.createProcessingAnnotation(GEProcConstants.NAMESPACE, GEProcConstants.WIDTH, new Double(width));
 			}
-			tokenCoords.put(t, new DisplayCoordinates(width));
+			DisplayCoordinates coords = new DisplayCoordinates(width);
+			tokenCoords.put(t, coords);
 		}
 		maxTokenHeight = Collections.max(heightsList);
 		List<Double> xList = new ArrayList<>();
@@ -194,7 +182,6 @@ public class Subgraph {
 	private void calculateSpanLayout(Set<SSpan> spans, Map<SToken, DisplayCoordinates> tokenCoords) {
 		LinkedHashMap<AnnotationSet, ArrayList<DisplayLevel>> levelsBySpanAnnotations = levelExtractor
 				.computeSpanLevels(graph, spans, tokenCoords);
-		log.error("\nLEVELS: {}", levelsBySpanAnnotations.isEmpty());
 		// Sort by number of spans per level
 		Comparator<Entry<AnnotationSet, ArrayList<DisplayLevel>>> byNumberOfSpan = (
 				Entry<AnnotationSet, ArrayList<DisplayLevel>> o1,
